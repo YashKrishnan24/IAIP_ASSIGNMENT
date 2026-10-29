@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — EmpManager Pro</title>
+  <meta name="description" content="EmpManager Pro Dashboard — Employee statistics and quick actions.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ── Sidebar ───────────────────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">🏢</div>
+      <div class="brand-text">
+        <div class="brand-name">EmpManager Pro</div>
+        <div class="brand-sub">Management System</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a class="nav-item" data-page="dashboard" href="index.html">
+        <span class="nav-icon">📊</span> Dashboard
+      </a>
+      <a class="nav-item" data-page="employees" href="employees.html">
+        <span class="nav-icon">👥</span> Employees
+      </a>
+      <a class="nav-item manager-only" data-page="transfers" href="transfers.html">
+        <span class="nav-icon">🔄</span> Transfers
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar" id="sidebar-avatar">A</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebar-user-name">Loading…</div>
+          <div class="user-role" id="sidebar-user-role">—</div>
+        </div>
+        <button class="btn-logout" onclick="Auth.logout()" title="Logout">⏻</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ──────────────────────────────────────────────────── -->
+  <main class="main-content">
+    <header class="topbar">
+      <div>
+        <div class="topbar-title">Dashboard</div>
+        <div class="topbar-breadcrumb">Welcome back</div>
+      </div>
+      <div class="topbar-search">
+        <span class="search-icon">🔍</span>
+        <input type="search" id="topbar-search-input" placeholder="Quick search employees…"
+               onkeypress="if(event.key==='Enter'){window.location.href='employees.html?q='+this.value}">
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="page-header">
+        <div>
+          <h1>Welcome to EmpManager Pro</h1>
+          <div class="subtitle" id="dash-welcome-sub">Overview of your workforce</div>
+        </div>
+        <a href="employees.html" class="btn btn-primary manager-only" id="btn-add-from-dash">
+          ➕ Add Employee
+        </a>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon blue">👥</div>
+          <div class="stat-info">
+            <div class="stat-value" id="ds-total">—</div>
+            <div class="stat-label">Total Employees</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green">✅</div>
+          <div class="stat-info">
+            <div class="stat-value" id="ds-active">—</div>
+            <div class="stat-label">Active</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon orange">⛔</div>
+          <div class="stat-info">
+            <div class="stat-value" id="ds-inactive">—</div>
+            <div class="stat-label">Inactive</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon purple">🏢</div>
+          <div class="stat-info">
+            <div class="stat-value" id="ds-depts">—</div>
+            <div class="stat-label">Departments</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="card mt-6">
+        <div class="card-header"><h2>🚀 Quick Actions</h2></div>
+        <div class="card-body">
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <a href="employees.html" class="btn btn-outline">👥 View All Employees</a>
+            <a href="employees.html" class="btn btn-outline manager-only">➕ Add Employee</a>
+            <a href="transfers.html" class="btn btn-outline manager-only">🔄 Department Transfers</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent employees -->
+      <div class="card mt-6">
+        <div class="card-header">
+          <h2>🕐 Recent Employees</h2>
+          <a href="employees.html" class="btn btn-ghost btn-sm">View All →</a>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Code</th><th>Name</th><th>Department</th><th>Role</th><th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="recent-tbody">
+              <tr><td colspan="5"><div class="empty-state"><div class="spinner"></div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/utils.js"></script>
+<script>
+  Auth.requireAuth();
+  renderSidebarUser();
+  setActiveNav('dashboard');
+
+  // Hide manager-only elements
+  if (!Auth.isManager()) qsa('.manager-only').forEach(el => el.classList.add('hidden'));
+
+  const user = Auth.getUser();
+  const sub  = document.getElementById('dash-welcome-sub');
+  if (sub && user) sub.textContent = `Logged in as ${user.role} · ${user.email}`;
+
+  async function loadDashboard() {
+    try {
+      const [totalRes, activeRes, inactiveRes, deptsRes] = await Promise.all([
+        EmployeeApi.getAll({ pageSize: 5, pageNumber: 1, sortBy: 'EmployeeId', sortDirection: 'DESC' }),
+        EmployeeApi.getAll({ pageSize: 1, pageNumber: 1, status: 'Active' }),
+        EmployeeApi.getAll({ pageSize: 1, pageNumber: 1, status: 'Inactive' }),
+        DeptApi.getAll(),
+      ]);
+
+      document.getElementById('ds-total').textContent   = totalRes.data.totalCount;
+      document.getElementById('ds-active').textContent  = activeRes.data.totalCount;
+      document.getElementById('ds-inactive').textContent= inactiveRes.data.totalCount;
+      document.getElementById('ds-depts').textContent   = deptsRes.data.length;
+
+      const tbody = document.getElementById('recent-tbody');
+      tbody.innerHTML = totalRes.data.data.map(e => `
+        <tr>
+          <td><span class="emp-code-link" onclick="window.location='employees.html'">${e.employeeCode}</span></td>
+          <td class="fw-600">${e.fullName}</td>
+          <td>${e.departmentName}</td>
+          <td>${e.roleName}</td>
+          <td><span class="badge badge-${e.employeeStatus.toLowerCase()}"><span class="badge-dot"></span>${e.employeeStatus}</span></td>
+        </tr>`).join('') || '<tr><td colspan="5"><div class="empty-state"><p>No employees found</p></div></td></tr>';
+    } catch (err) {
+      Toast.error('Dashboard load failed', err.message);
+    }
+  }
+
+  loadDashboard();
+</script>
+</body>
+</html>

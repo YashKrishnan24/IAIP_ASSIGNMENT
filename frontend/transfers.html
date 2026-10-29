@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transfers — EmpManager Pro</title>
+  <meta name="description" content="View and manage all employee department transfers.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">🏢</div>
+      <div class="brand-text">
+        <div class="brand-name">EmpManager Pro</div>
+        <div class="brand-sub">Management System</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a class="nav-item" data-page="dashboard"  href="index.html"><span class="nav-icon">📊</span> Dashboard</a>
+      <a class="nav-item" data-page="employees"  href="employees.html"><span class="nav-icon">👥</span> Employees</a>
+      <a class="nav-item" data-page="transfers"  href="transfers.html"><span class="nav-icon">🔄</span> Transfers</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar" id="sidebar-avatar">A</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebar-user-name">Loading…</div>
+          <div class="user-role" id="sidebar-user-role">—</div>
+        </div>
+        <button class="btn-logout" onclick="Auth.logout()" title="Logout">⏻</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <div>
+        <div class="topbar-title">Transfers</div>
+        <div class="topbar-breadcrumb">Dashboard / Transfers</div>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="page-header">
+        <div>
+          <h1>Transfer History</h1>
+          <div class="subtitle">Complete log of all employee department transfers</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>🔄 All Transfer Records</h2>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="search" id="tf-search" class="filter-input" style="width:220px" placeholder="Search by name or department…">
+          </div>
+        </div>
+        <div class="table-wrapper" style="position:relative">
+          <div id="tf-loading" class="loading-overlay"><div class="spinner"></div></div>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Employee</th>
+                <th>From Department</th>
+                <th>To Department</th>
+                <th>Old Code</th>
+                <th>New Code</th>
+                <th>Old Role</th>
+                <th>New Role</th>
+                <th>Transfer Date</th>
+                <th>Reason</th>
+              </tr>
+            </thead>
+            <tbody id="tf-tbody">
+              <tr><td colspan="10"><div class="empty-state"><div class="spinner"></div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination-row">
+          <span id="tf-info" class="pagination-info">Loading…</span>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/utils.js"></script>
+<script>
+  Auth.requireAuth();
+  if (!Auth.isManager()) window.location.href = 'index.html';
+  renderSidebarUser();
+  setActiveNav('transfers');
+
+  let allTransfers = [];
+
+  async function loadAllTransfers() {
+    // Load first 200 employees and get their histories
+    try {
+      const empRes = await EmployeeApi.getAll({ pageSize: 200, pageNumber: 1 });
+      const employees = empRes.data.data;
+
+      const histories = await Promise.allSettled(
+        employees.map(e => EmployeeApi.getHistory(e.employeeId))
+      );
+
+      allTransfers = histories
+        .filter(r => r.status === 'fulfilled' && r.value.data.length)
+        .flatMap(r => r.value.data)
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      renderTransferTable(allTransfers);
+    } catch (err) {
+      Toast.error('Load failed', err.message);
+    } finally {
+      document.getElementById('tf-loading').classList.add('hidden');
+    }
+  }
+
+  function renderTransferTable(data) {
+    const tbody = document.getElementById('tf-tbody');
+    document.getElementById('tf-info').textContent = `${data.length} transfer record(s)`;
+    if (!data.length) {
+      tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">🔄</div><h3>No transfer records</h3></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = data.map((h, i) => `
+      <tr>
+        <td class="text-muted text-sm">${i + 1}</td>
+        <td class="fw-600">${h.employeeFullName}</td>
+        <td>${h.oldDepartmentName}</td>
+        <td>${h.newDepartmentName}</td>
+        <td><code style="color:var(--clr-text-3)">${h.oldEmployeeCode}</code></td>
+        <td><code class="emp-code-link">${h.newEmployeeCode}</code></td>
+        <td class="text-sm">${h.oldRoleName}</td>
+        <td class="text-sm">${h.newRoleName}</td>
+        <td class="text-sm">${formatDate(h.transferDate)}</td>
+        <td class="text-sm text-muted" style="max-width:200px">${h.transferReason}</td>
+      </tr>`).join('');
+  }
+
+  // Search
+  const debSearch = debounce(q => {
+    const lower = q.toLowerCase();
+    const filtered = allTransfers.filter(h =>
+      h.employeeFullName.toLowerCase().includes(lower) ||
+      h.oldDepartmentName.toLowerCase().includes(lower) ||
+      h.newDepartmentName.toLowerCase().includes(lower) ||
+      h.oldEmployeeCode.toLowerCase().includes(lower) ||
+      h.newEmployeeCode.toLowerCase().includes(lower)
+    );
+    renderTransferTable(filtered);
+  }, 300);
+
+  document.getElementById('tf-search').addEventListener('input', e => debSearch(e.target.value));
+
+  loadAllTransfers();
+</script>
+</body>
+</html>

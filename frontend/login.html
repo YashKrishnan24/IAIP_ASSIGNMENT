@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — EmpManager Pro</title>
+  <meta name="description" content="Login to EmpManager Pro — your complete Employee Management System.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="login-page">
+  <div class="login-card">
+    <div class="login-logo">🏢</div>
+    <h1 class="login-title">EmpManager Pro</h1>
+    <p class="login-sub">Sign in to your account to continue</p>
+
+    <form id="login-form" novalidate>
+      <div class="form-group" style="margin-bottom:16px">
+        <label class="form-label" for="login-email">Email Address <span class="req">*</span></label>
+        <input type="email" id="login-email" class="form-control" placeholder="admin@company.com" autocomplete="email">
+      </div>
+      <div class="form-group" style="margin-bottom:24px">
+        <label class="form-label" for="login-password">Password <span class="req">*</span></label>
+        <input type="password" id="login-password" class="form-control" placeholder="••••••••" autocomplete="current-password">
+      </div>
+
+      <button type="submit" id="btn-login" class="btn btn-primary w-100" style="justify-content:center;padding:12px">
+        🔐 Sign In
+      </button>
+
+      <div id="login-error" class="form-error hidden" style="margin-top:12px;justify-content:center"></div>
+    </form>
+
+    <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--clr-border)">
+      <p class="text-muted text-sm" style="text-align:center;margin-bottom:12px">Demo Credentials</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-outline btn-sm" onclick="fillCreds('admin@company.com','Admin@123')">
+          👑 Admin — admin@company.com
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="fillCreds('manager@company.com','Manager@123')">
+          👔 Manager — manager@company.com
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="fillCreds('employee@company.com','Employee@123')">
+          👤 Employee — employee@company.com
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/utils.js"></script>
+<script>
+  // Redirect if already logged in
+  if (Auth.isLoggedIn()) window.location.href = 'index.html';
+
+  function fillCreds(email, password) {
+    document.getElementById('login-email').value    = email;
+    document.getElementById('login-password').value = password;
+  }
+
+  document.getElementById('login-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const errEl    = document.getElementById('login-error');
+    const btn      = document.getElementById('btn-login');
+    const email    = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+
+    errEl.classList.add('hidden');
+
+    if (!email || !password) {
+      errEl.textContent = '⚠ Email and password are required.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+
+    setLoading(btn, true);
+    try {
+      const res = await AuthApi.login(email, password);
+      Auth.save(res);
+      window.location.href = 'index.html';
+    } catch (err) {
+      errEl.textContent = `⚠ ${err.message}`;
+      errEl.classList.remove('hidden');
+    } finally {
+      setLoading(btn, false, '🔐 Sign In');
+    }
+  });
+</script>
+</body>
+</html>

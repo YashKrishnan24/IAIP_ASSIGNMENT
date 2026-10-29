@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employees — EmpManager Pro</title>
+  <meta name="description" content="Manage all employees — add, edit, view, transfer, and search with advanced filters.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ── Sidebar ───────────────────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">🏢</div>
+      <div class="brand-text">
+        <div class="brand-name">EmpManager Pro</div>
+        <div class="brand-sub">Management System</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a class="nav-item" data-page="dashboard" href="index.html"><span class="nav-icon">📊</span> Dashboard</a>
+      <a class="nav-item" data-page="employees" href="employees.html"><span class="nav-icon">👥</span> Employees</a>
+      <a class="nav-item manager-only" data-page="transfers" href="transfers.html"><span class="nav-icon">🔄</span> Transfers</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar" id="sidebar-avatar">A</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebar-user-name">Loading…</div>
+          <div class="user-role" id="sidebar-user-role">—</div>
+        </div>
+        <button class="btn-logout" onclick="Auth.logout()" title="Logout">⏻</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ──────────────────────────────────────────────────── -->
+  <main class="main-content">
+    <header class="topbar">
+      <div>
+        <div class="topbar-title">Employees</div>
+        <div class="topbar-breadcrumb">Dashboard / Employees</div>
+      </div>
+      <div class="topbar-search">
+        <span class="search-icon">🔍</span>
+        <input type="search" id="topbar-search-input" placeholder="Quick search…">
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="page-header">
+        <div>
+          <h1>Employee Directory</h1>
+          <div class="subtitle">Manage and track all employees across departments</div>
+        </div>
+        <button class="btn btn-primary manager-only" id="btn-add-emp" onclick="openCreateForm()">
+          ➕ Add Employee
+        </button>
+      </div>
+
+      <!-- Stats row -->
+      <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:24px">
+        <div class="stat-card">
+          <div class="stat-icon blue">👥</div>
+          <div class="stat-info"><div class="stat-value" id="stat-total">—</div><div class="stat-label">Total Matching</div></div>
+        </div>
+      </div>
+
+      <!-- Employee List Card -->
+      <div class="card">
+        <!-- Filter Bar -->
+        <div class="filter-row">
+          <div class="filter-group" style="flex:2;min-width:200px">
+            <label>🔍 Global Search</label>
+            <div style="position:relative">
+              <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--clr-text-3)">🔍</span>
+              <input type="search" id="global-search" class="filter-input" placeholder="Name, code, email, dept…" style="padding-left:30px">
+            </div>
+          </div>
+
+          <div class="filter-group">
+            <label>🏢 Department</label>
+            <select id="filter-dept" class="filter-select"><option value="">All Departments</option></select>
+          </div>
+
+          <div class="filter-group">
+            <label>💼 Role</label>
+            <select id="filter-role" class="filter-select"><option value="">All Roles</option></select>
+          </div>
+
+          <div class="filter-group">
+            <label>✅ Status</label>
+            <select id="filter-status" class="filter-select">
+              <option value="">All Statuses</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label>⚧ Gender</label>
+            <select id="filter-gender" class="filter-select">
+              <option value="">All</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Second filter row -->
+        <div class="filter-row" style="padding-top:8px;padding-bottom:8px">
+          <div class="filter-group">
+            <label>📅 Joining From</label>
+            <input type="date" id="filter-joining-from" class="filter-input">
+          </div>
+          <div class="filter-group">
+            <label>📅 Joining To</label>
+            <input type="date" id="filter-joining-to" class="filter-input">
+          </div>
+          <div class="filter-group">
+            <label>💰 Salary Range</label>
+            <select id="filter-salary-range" class="filter-select">
+              <option value="0">All Salaries</option>
+            </select>
+          </div>
+          <div class="filter-group hidden" id="custom-salary-row" style="flex-direction:row;align-items:flex-end;gap:8px;min-width:280px">
+            <div style="flex:1">
+              <label>Min ₹</label>
+              <input type="number" id="filter-custom-min" class="filter-input" placeholder="e.g. 300000" min="0">
+            </div>
+            <div style="flex:1">
+              <label>Max ₹</label>
+              <input type="number" id="filter-custom-max" class="filter-input" placeholder="e.g. 1000000" min="0">
+            </div>
+          </div>
+          <div class="filter-group" style="justify-content:flex-end;flex-direction:row;align-items:flex-end;gap:8px;min-width:auto">
+            <button id="btn-reset-filters" class="btn btn-outline btn-sm">↺ Reset</button>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-wrapper" style="position:relative">
+          <div id="table-loading" class="loading-overlay hidden"><div class="spinner"></div></div>
+          <table id="emp-table">
+            <thead>
+              <tr>
+                <th class="sortable" data-col="EmployeeCode">Code <span class="sort-icon">⇅</span></th>
+                <th class="sortable" data-col="FullName">Name <span class="sort-icon">⇅</span></th>
+                <th class="sortable" data-col="DepartmentName">Department <span class="sort-icon">⇅</span></th>
+                <th class="sortable" data-col="RoleName">Role <span class="sort-icon">⇅</span></th>
+                <th class="sortable" data-col="Email">Email <span class="sort-icon">⇅</span></th>
+                <th>Mobile</th>
+                <th class="sortable" data-col="AnnualSalary">Salary <span class="sort-icon">⇅</span></th>
+                <th class="sortable" data-col="EmployeeStatus">Status <span class="sort-icon">⇅</span></th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="emp-tbody">
+              <tr><td colspan="9"><div class="empty-state"><div class="spinner"></div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination-row">
+          <span class="pagination-info" id="pagination-info">Loading…</span>
+          <div class="pagination-controls" id="pagination-controls"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     Modal: Employee Detail View
+════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal" style="max-width:820px">
+    <div class="modal-header">
+      <h3>👤 Employee Details</h3>
+      <button class="modal-close" data-close-modal="detail-modal">×</button>
+    </div>
+    <div id="detail-body"><div class="empty-state"><div class="spinner"></div></div></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" data-close-modal="detail-modal">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     Modal: Add / Edit Employee Form
+════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="form-modal">
+  <div class="modal" style="max-width:820px">
+    <div class="modal-header">
+      <h3 id="form-modal-title">➕ Add New Employee</h3>
+      <button class="modal-close" data-close-modal="form-modal">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="emp-form" novalidate>
+        <div class="form-grid">
+          <!-- Auto Code -->
+          <div class="form-group">
+            <label class="form-label">Employee Code</label>
+            <div class="form-control" style="background:var(--clr-surface-3);cursor:default;color:var(--clr-text-3)" id="form-emp-code-display">
+              Auto-generated
+            </div>
+          </div>
+
+          <div class="form-section-title">👤 Personal Information</div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-name">Full Name <span class="req">*</span></label>
+            <input type="text" id="form-name" class="form-control" placeholder="Rahul Sharma">
+            <span class="form-hint">Alphabets and spaces only</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-email">Email Address <span class="req">*</span></label>
+            <input type="email" id="form-email" class="form-control" placeholder="rahul@company.com">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-mobile">Mobile Number <span class="req">*</span></label>
+            <input type="tel" id="form-mobile" class="form-control" placeholder="9876543210" maxlength="10">
+            <span class="form-hint">10 digits without spaces or hyphens</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-gender">Gender <span class="req">*</span></label>
+            <select id="form-gender" class="form-select">
+              <option value="">Select Gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-dob">Date of Birth <span class="req">*</span></label>
+            <input type="date" id="form-dob" class="form-control" max="">
+          </div>
+
+          <div class="form-group full">
+            <label class="form-label" for="form-address">Address <span class="req">*</span></label>
+            <textarea id="form-address" class="form-control" rows="2" placeholder="Full address including city, state and PIN"></textarea>
+          </div>
+
+          <div class="form-section-title">💼 Employment Details</div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-dept">Department <span class="req">*</span></label>
+            <select id="form-dept" class="form-select"><option value="">Select Department</option></select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-role">Role / Designation <span class="req">*</span></label>
+            <select id="form-role" class="form-select"><option value="">Select Role</option></select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-joining">Joining Date <span class="req">*</span></label>
+            <input type="date" id="form-joining" class="form-control">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-salary">Annual Salary (₹) <span class="req">*</span></label>
+            <input type="number" id="form-salary" class="form-control" placeholder="600000" min="1">
+          </div>
+
+          <div class="form-group" id="form-status-group" style="display:none">
+            <label class="form-label" for="form-status">Employee Status</label>
+            <select id="form-status" class="form-select">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+
+          <div class="form-section-title">🔒 Identity Documents</div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-aadhaar">Aadhaar Number <span class="req">*</span></label>
+            <input type="text" id="form-aadhaar" class="form-control" placeholder="XXXX-XXXX-XXXX" maxlength="14">
+            <span class="form-hint">Auto-formatted: XXXX-XXXX-XXXX</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-pan">PAN Number <span class="req">*</span></label>
+            <input type="text" id="form-pan" class="form-control" placeholder="ABCDE1234F" maxlength="10">
+            <span class="form-hint">Format: 5 letters + 4 digits + 1 letter</span>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" data-close-modal="form-modal">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-emp">✅ Create Employee</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     Modal: Department Transfer
+════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="transfer-modal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <h3>🔄 Department Transfer</h3>
+      <button class="modal-close" data-close-modal="transfer-modal">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="grid-template-columns:1fr 1fr">
+        <div class="form-group">
+          <label class="form-label">Employee Name</label>
+          <div class="form-control" style="background:var(--clr-surface-3);color:var(--clr-text-3)" id="tf-emp-name">—</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Current Employee Code</label>
+          <div class="form-control" style="background:var(--clr-surface-3);color:var(--clr-primary);font-family:monospace" id="tf-current-code">—</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Current Department</label>
+          <div class="form-control" style="background:var(--clr-surface-3);color:var(--clr-text-3)" id="tf-current-dept">—</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="tf-new-dept">New Department <span class="req">*</span></label>
+          <select id="tf-new-dept" class="form-select"><option value="">Select Department</option></select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label" for="tf-new-role">New Role <span class="req">*</span></label>
+          <select id="tf-new-role" class="form-select"><option value="">Select Role</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="tf-date">Transfer Date <span class="req">*</span></label>
+          <input type="date" id="tf-date" class="form-control">
+        </div>
+        <div class="form-group full" style="grid-column:1/-1">
+          <label class="form-label" for="tf-reason">Transfer Reason <span class="req">*</span></label>
+          <textarea id="tf-reason" class="form-control" rows="3" placeholder="Reason for department transfer…"></textarea>
+        </div>
+
+        <div class="form-group full" style="grid-column:1/-1">
+          <div style="background:var(--clr-primary-bg);border:1px solid var(--clr-primary-dim);border-radius:var(--r-md);padding:12px;font-size:.82rem;color:var(--clr-info)">
+            ℹ️ After transfer, the Employee Code will be automatically regenerated based on the new department.
+            The internal Employee ID remains unchanged.
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" data-close-modal="transfer-modal">Cancel</button>
+      <button class="btn btn-primary" id="btn-do-transfer">🔄 Confirm Transfer</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/employees.js"></script>
+<script>
+  // Set max date for DOB to yesterday
+  const dobInput = document.getElementById('form-dob');
+  if (dobInput) {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    dobInput.max = yesterday.toISOString().slice(0, 10);
+  }
+
+  // Show/hide status field on edit
+  const origOpen = openModal;
+  document.addEventListener('click', e => {
+    const statusGroup = document.getElementById('form-status-group');
+    if (statusGroup) statusGroup.style.display = empState.editingId ? 'flex' : 'none';
+    const saveBtn = document.getElementById('btn-save-emp');
+    if (saveBtn) saveBtn.textContent = empState.editingId ? '💾 Update Employee' : '✅ Create Employee';
+  });
+
+  initEmployeePage();
+</script>
+</body>
+</html>
