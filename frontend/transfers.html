@@ -11,17 +11,51 @@
 <div class="app-shell">
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-      <div class="brand-icon">🏢</div>
+      <div class="brand-icon">
+        <svg class="svg-icon" style="width:18px;height:18px" viewBox="0 0 24 24">
+          <path d="M3 21h18M3 7v14M21 7v14M6 7V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v3M9 10h.01M15 10h.01M9 14h.01M15 14h.01M9 18h.01M15 18h.01"/>
+        </svg>
+      </div>
       <div class="brand-text">
         <div class="brand-name">EmpManager Pro</div>
-        <div class="brand-sub">Management System</div>
+        <div class="brand-sub">Workforce Portal</div>
       </div>
     </div>
     <nav class="sidebar-nav">
-      <div class="nav-section-label">Main</div>
-      <a class="nav-item" data-page="dashboard"  href="index.html"><span class="nav-icon">📊</span> Dashboard</a>
-      <a class="nav-item" data-page="employees"  href="employees.html"><span class="nav-icon">👥</span> Employees</a>
-      <a class="nav-item" data-page="transfers"  href="transfers.html"><span class="nav-icon">🔄</span> Transfers</a>
+      <div class="nav-section-label">Navigation</div>
+      <a class="nav-item" data-page="dashboard"  href="index.html">
+        <span class="nav-icon">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <rect width="7" height="9" x="3" y="3" rx="1"/>
+            <rect width="7" height="5" x="14" y="3" rx="1"/>
+            <rect width="7" height="9" x="14" y="12" rx="1"/>
+            <rect width="7" height="5" x="3" y="16" rx="1"/>
+          </svg>
+        </span>
+        Dashboard
+      </a>
+      <a class="nav-item" data-page="employees"  href="employees.html">
+        <span class="nav-icon">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </span>
+        Employees
+      </a>
+      <a class="nav-item" data-page="transfers"  href="transfers.html">
+        <span class="nav-icon">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <path d="m16 3 4 4-4 4"/>
+            <path d="M20 7H4"/>
+            <path d="m8 21-4-4 4-4"/>
+            <path d="M4 17h16"/>
+          </svg>
+        </span>
+        Transfers
+      </a>
     </nav>
     <div class="sidebar-footer">
       <div class="user-card">
@@ -30,7 +64,13 @@
           <div class="user-name" id="sidebar-user-name">Loading…</div>
           <div class="user-role" id="sidebar-user-role">—</div>
         </div>
-        <button class="btn-logout" onclick="Auth.logout()" title="Logout">⏻</button>
+        <button class="btn-logout" onclick="Auth.logout()" title="Sign Out">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </button>
       </div>
     </div>
   </aside>
@@ -39,23 +79,23 @@
     <header class="topbar">
       <div>
         <div class="topbar-title">Transfers</div>
-        <div class="topbar-breadcrumb">Dashboard / Transfers</div>
+        <div class="topbar-breadcrumb">History</div>
       </div>
     </header>
 
     <div class="page-content">
       <div class="page-header">
         <div>
-          <h1>Transfer History</h1>
-          <div class="subtitle">Complete log of all employee department transfers</div>
+          <h1>Department Transfers</h1>
+          <div class="subtitle">Complete audit trail of all employee department transitions and code reassignments</div>
         </div>
       </div>
 
       <div class="card">
         <div class="card-header">
-          <h2>🔄 All Transfer Records</h2>
+          <h2>Transfer Records</h2>
           <div style="display:flex;gap:8px;align-items:center">
-            <input type="search" id="tf-search" class="filter-input" style="width:220px" placeholder="Search by name or department…">
+            <input type="search" id="tf-search" class="filter-input" style="width:240px" placeholder="Filter by name, department, or code…">
           </div>
         </div>
         <div class="table-wrapper" style="position:relative">
@@ -101,7 +141,6 @@
   let allTransfers = [];
 
   async function loadAllTransfers() {
-    // Load first 200 employees and get their histories
     try {
       const empRes = await EmployeeApi.getAll({ pageSize: 200, pageNumber: 1 });
       const employees = empRes.data.data;
@@ -127,7 +166,21 @@
     const tbody = document.getElementById('tf-tbody');
     document.getElementById('tf-info').textContent = `${data.length} transfer record(s)`;
     if (!data.length) {
-      tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">🔄</div><h3>No transfer records</h3></div></td></tr>`;
+      tbody.innerHTML = `
+        <tr><td colspan="10">
+          <div class="empty-state">
+            <div class="empty-icon">
+              <svg class="svg-icon" style="width:32px;height:32px" viewBox="0 0 24 24">
+                <path d="m16 3 4 4-4 4"/>
+                <path d="M20 7H4"/>
+                <path d="m8 21-4-4 4-4"/>
+                <path d="M4 17h16"/>
+              </svg>
+            </div>
+            <h3>No transfer records found</h3>
+            <p>Employees transferred to new departments will appear here.</p>
+          </div>
+        </td></tr>`;
       return;
     }
     tbody.innerHTML = data.map((h, i) => `
@@ -138,10 +191,10 @@
         <td>${h.newDepartmentName}</td>
         <td><code style="color:var(--clr-text-3)">${h.oldEmployeeCode}</code></td>
         <td><code class="emp-code-link">${h.newEmployeeCode}</code></td>
-        <td class="text-sm">${h.oldRoleName}</td>
+        <td class="text-sm text-muted">${h.oldRoleName}</td>
         <td class="text-sm">${h.newRoleName}</td>
-        <td class="text-sm">${formatDate(h.transferDate)}</td>
-        <td class="text-sm text-muted" style="max-width:200px">${h.transferReason}</td>
+        <td class="text-sm text-muted">${formatDate(h.transferDate)}</td>
+        <td class="text-sm text-muted" style="max-width:220px">${h.transferReason}</td>
       </tr>`).join('');
   }
 

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard — EmpManager Pro</title>
-  <meta name="description" content="EmpManager Pro Dashboard — Employee statistics and quick actions.">
+  <meta name="description" content="EmpManager Pro Dashboard — Workforce statistics and quick actions.">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -13,23 +13,51 @@
   <!-- ── Sidebar ───────────────────────────────────────────────── -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-      <div class="brand-icon">🏢</div>
+      <div class="brand-icon">
+        <svg class="svg-icon" style="width:18px;height:18px" viewBox="0 0 24 24">
+          <path d="M3 21h18M3 7v14M21 7v14M6 7V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v3M9 10h.01M15 10h.01M9 14h.01M15 14h.01M9 18h.01M15 18h.01"/>
+        </svg>
+      </div>
       <div class="brand-text">
         <div class="brand-name">EmpManager Pro</div>
-        <div class="brand-sub">Management System</div>
+        <div class="brand-sub">Workforce Portal</div>
       </div>
     </div>
 
     <nav class="sidebar-nav">
-      <div class="nav-section-label">Main</div>
+      <div class="nav-section-label">Navigation</div>
       <a class="nav-item" data-page="dashboard" href="index.html">
-        <span class="nav-icon">📊</span> Dashboard
+        <span class="nav-icon">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <rect width="7" height="9" x="3" y="3" rx="1"/>
+            <rect width="7" height="5" x="14" y="3" rx="1"/>
+            <rect width="7" height="9" x="14" y="12" rx="1"/>
+            <rect width="7" height="5" x="3" y="16" rx="1"/>
+          </svg>
+        </span>
+        Dashboard
       </a>
       <a class="nav-item" data-page="employees" href="employees.html">
-        <span class="nav-icon">👥</span> Employees
+        <span class="nav-icon">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </span>
+        Employees
       </a>
       <a class="nav-item manager-only" data-page="transfers" href="transfers.html">
-        <span class="nav-icon">🔄</span> Transfers
+        <span class="nav-icon">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <path d="m16 3 4 4-4 4"/>
+            <path d="M20 7H4"/>
+            <path d="m8 21-4-4 4-4"/>
+            <path d="M4 17h16"/>
+          </svg>
+        </span>
+        Transfers
       </a>
     </nav>
 
@@ -40,7 +68,13 @@
           <div class="user-name" id="sidebar-user-name">Loading…</div>
           <div class="user-role" id="sidebar-user-role">—</div>
         </div>
-        <button class="btn-logout" onclick="Auth.logout()" title="Logout">⏻</button>
+        <button class="btn-logout" onclick="Auth.logout()" title="Sign Out">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </button>
       </div>
     </div>
   </aside>
@@ -50,51 +84,85 @@
     <header class="topbar">
       <div>
         <div class="topbar-title">Dashboard</div>
-        <div class="topbar-breadcrumb">Welcome back</div>
+        <div class="topbar-breadcrumb">Overview</div>
       </div>
       <div class="topbar-search">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon">
+          <svg class="svg-icon" style="width:14px;height:14px" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </span>
         <input type="search" id="topbar-search-input" placeholder="Quick search employees…"
-               onkeypress="if(event.key==='Enter'){window.location.href='employees.html?q='+this.value}">
+               onkeypress="if(event.key==='Enter'){window.location.href='employees.html?q='+encodeURIComponent(this.value)}">
       </div>
     </header>
 
     <div class="page-content">
       <div class="page-header">
         <div>
-          <h1>Welcome to EmpManager Pro</h1>
-          <div class="subtitle" id="dash-welcome-sub">Overview of your workforce</div>
+          <h1>Workforce Overview</h1>
+          <div class="subtitle" id="dash-welcome-sub">Key metrics across all departments</div>
         </div>
         <a href="employees.html" class="btn btn-primary manager-only" id="btn-add-from-dash">
-          ➕ Add Employee
+          <svg class="svg-icon" style="width:15px;height:15px" viewBox="0 0 24 24">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Add Employee
         </a>
       </div>
 
       <!-- Stats -->
       <div class="stats-grid" id="stats-grid">
         <div class="stat-card">
-          <div class="stat-icon blue">👥</div>
+          <div class="stat-icon">
+            <svg class="svg-icon" viewBox="0 0 24 24">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
           <div class="stat-info">
             <div class="stat-value" id="ds-total">—</div>
             <div class="stat-label">Total Employees</div>
           </div>
         </div>
+
         <div class="stat-card">
-          <div class="stat-icon green">✅</div>
+          <div class="stat-icon">
+            <svg class="svg-icon" style="color:var(--clr-success)" viewBox="0 0 24 24">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+          </div>
           <div class="stat-info">
             <div class="stat-value" id="ds-active">—</div>
-            <div class="stat-label">Active</div>
+            <div class="stat-label">Active Records</div>
           </div>
         </div>
+
         <div class="stat-card">
-          <div class="stat-icon orange">⛔</div>
+          <div class="stat-icon">
+            <svg class="svg-icon" style="color:var(--clr-text-3)" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+            </svg>
+          </div>
           <div class="stat-info">
             <div class="stat-value" id="ds-inactive">—</div>
-            <div class="stat-label">Inactive</div>
+            <div class="stat-label">Inactive Records</div>
           </div>
         </div>
+
         <div class="stat-card">
-          <div class="stat-icon purple">🏢</div>
+          <div class="stat-icon">
+            <svg class="svg-icon" viewBox="0 0 24 24">
+              <rect width="20" height="14" x="2" y="7" rx="2" ry="2"/>
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+            </svg>
+          </div>
           <div class="stat-info">
             <div class="stat-value" id="ds-depts">—</div>
             <div class="stat-label">Departments</div>
@@ -104,12 +172,34 @@
 
       <!-- Quick Actions -->
       <div class="card mt-6">
-        <div class="card-header"><h2>🚀 Quick Actions</h2></div>
+        <div class="card-header">
+          <h2>Quick Actions</h2>
+        </div>
         <div class="card-body">
-          <div style="display:flex;gap:12px;flex-wrap:wrap">
-            <a href="employees.html" class="btn btn-outline">👥 View All Employees</a>
-            <a href="employees.html" class="btn btn-outline manager-only">➕ Add Employee</a>
-            <a href="transfers.html" class="btn btn-outline manager-only">🔄 Department Transfers</a>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <a href="employees.html" class="btn btn-outline">
+              <svg class="svg-icon" style="width:14px;height:14px" viewBox="0 0 24 24">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+              </svg>
+              View Directory
+            </a>
+            <a href="employees.html" class="btn btn-outline manager-only">
+              <svg class="svg-icon" style="width:14px;height:14px" viewBox="0 0 24 24">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Add New Employee
+            </a>
+            <a href="transfers.html" class="btn btn-outline manager-only">
+              <svg class="svg-icon" style="width:14px;height:14px" viewBox="0 0 24 24">
+                <path d="m16 3 4 4-4 4"/>
+                <path d="M20 7H4"/>
+                <path d="m8 21-4-4 4-4"/>
+                <path d="M4 17h16"/>
+              </svg>
+              Transfer History
+            </a>
           </div>
         </div>
       </div>
@@ -117,8 +207,8 @@
       <!-- Recent employees -->
       <div class="card mt-6">
         <div class="card-header">
-          <h2>🕐 Recent Employees</h2>
-          <a href="employees.html" class="btn btn-ghost btn-sm">View All →</a>
+          <h2>Recent Employees</h2>
+          <a href="employees.html" class="btn btn-ghost btn-sm">View All Directory →</a>
         </div>
         <div class="table-wrapper">
           <table>

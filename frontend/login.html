@@ -3,45 +3,52 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login — EmpManager Pro</title>
-  <meta name="description" content="Login to EmpManager Pro — your complete Employee Management System.">
+  <title>Sign In — EmpManager Pro</title>
+  <meta name="description" content="Sign in to EmpManager Pro — Employee Directory & Management Portal.">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div class="login-page">
   <div class="login-card">
-    <div class="login-logo">🏢</div>
+    <div class="login-logo">
+      <svg class="svg-icon" style="width:20px;height:20px;color:#fff" viewBox="0 0 24 24">
+        <path d="M3 21h18M3 7v14M21 7v14M6 7V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v3M9 10h.01M15 10h.01M9 14h.01M15 14h.01M9 18h.01M15 18h.01"/>
+      </svg>
+    </div>
     <h1 class="login-title">EmpManager Pro</h1>
-    <p class="login-sub">Sign in to your account to continue</p>
+    <p class="login-sub">Enter your credentials to access the portal</p>
 
     <form id="login-form" novalidate>
       <div class="form-group" style="margin-bottom:16px">
         <label class="form-label" for="login-email">Email Address <span class="req">*</span></label>
         <input type="email" id="login-email" class="form-control" placeholder="admin@company.com" autocomplete="email">
       </div>
-      <div class="form-group" style="margin-bottom:24px">
+      <div class="form-group" style="margin-bottom:20px">
         <label class="form-label" for="login-password">Password <span class="req">*</span></label>
         <input type="password" id="login-password" class="form-control" placeholder="••••••••" autocomplete="current-password">
       </div>
 
-      <button type="submit" id="btn-login" class="btn btn-primary w-100" style="justify-content:center;padding:12px">
-        🔐 Sign In
+      <button type="submit" id="btn-login" class="btn btn-primary w-100" style="padding:10px">
+        Sign In
       </button>
 
-      <div id="login-error" class="form-error hidden" style="margin-top:12px;justify-content:center"></div>
+      <div id="login-error" class="form-error hidden" style="margin-top:12px;text-align:center"></div>
     </form>
 
     <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--clr-border)">
-      <p class="text-muted text-sm" style="text-align:center;margin-bottom:12px">Demo Credentials</p>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <button class="btn btn-outline btn-sm" onclick="fillCreds('admin@company.com','Admin@123')">
-          👑 Admin — admin@company.com
+      <p class="text-muted text-sm" style="text-align:center;margin-bottom:12px;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px">Quick Demo Accounts</p>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button class="btn btn-outline btn-sm" style="justify-content:space-between" onclick="fillCreds('admin@company.com','Admin@123')">
+          <span>admin@company.com</span>
+          <span class="badge badge-inactive" style="font-size:0.68rem">Admin</span>
         </button>
-        <button class="btn btn-outline btn-sm" onclick="fillCreds('manager@company.com','Manager@123')">
-          👔 Manager — manager@company.com
+        <button class="btn btn-outline btn-sm" style="justify-content:space-between" onclick="fillCreds('manager@company.com','Manager@123')">
+          <span>manager@company.com</span>
+          <span class="badge badge-inactive" style="font-size:0.68rem">Manager</span>
         </button>
-        <button class="btn btn-outline btn-sm" onclick="fillCreds('employee@company.com','Employee@123')">
-          👤 Employee — employee@company.com
+        <button class="btn btn-outline btn-sm" style="justify-content:space-between" onclick="fillCreds('employee@company.com','Employee@123')">
+          <span>employee@company.com</span>
+          <span class="badge badge-inactive" style="font-size:0.68rem">Employee</span>
         </button>
       </div>
     </div>
@@ -71,7 +78,7 @@
     errEl.classList.add('hidden');
 
     if (!email || !password) {
-      errEl.textContent = '⚠ Email and password are required.';
+      errEl.textContent = 'Email and password are required.';
       errEl.classList.remove('hidden');
       return;
     }
@@ -82,10 +89,10 @@
       Auth.save(res);
       window.location.href = 'index.html';
     } catch (err) {
-      errEl.textContent = `⚠ ${err.message}`;
+      errEl.textContent = err.message || 'Invalid credentials';
       errEl.classList.remove('hidden');
     } finally {
-      setLoading(btn, false, '🔐 Sign In');
+      setLoading(btn, false, 'Sign In');
     }
   });
 </script>

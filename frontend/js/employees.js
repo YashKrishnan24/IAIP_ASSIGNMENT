@@ -99,9 +99,14 @@ function renderTable() {
     tbody.innerHTML = `
       <tr><td colspan="10">
         <div class="empty-state">
-          <div class="empty-icon">🔍</div>
+          <div class="empty-icon">
+            <svg class="svg-icon" style="width:30px;height:30px" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </div>
           <h3>No employees found</h3>
-          <p>Try adjusting your search or filters.</p>
+          <p>Try adjusting your search query or active filters.</p>
         </div>
       </td></tr>`;
     return;
@@ -114,28 +119,36 @@ function renderTable() {
       </td>
       <td>
         <div class="d-flex align-center gap-3">
-          <div class="user-avatar" style="width:32px;height:32px;font-size:.7rem">${getInitials(e.fullName)}</div>
+          <div class="user-avatar" style="width:30px;height:30px;font-size:.72rem">${getInitials(e.fullName)}</div>
           <span class="fw-600">${e.fullName}</span>
         </div>
       </td>
       <td><span class="text-sm">${e.departmentName}</span></td>
       <td><span class="text-sm">${e.roleName}</span></td>
       <td><span class="text-sm text-muted">${e.email}</span></td>
-      <td><span class="text-sm">${e.mobileNumber}</span></td>
+      <td><span class="text-sm text-muted">${e.mobileNumber}</span></td>
       <td><span class="salary-display">${formatCurrency(e.annualSalary)}</span></td>
       <td>
         <span class="badge badge-${e.employeeStatus.toLowerCase()}">
           <span class="badge-dot"></span>${e.employeeStatus}
         </span>
       </td>
-      <td>
-        <div class="action-group">
-          <button class="action-btn view"     onclick="viewEmployee(${e.employeeId})"     title="View Details">👁</button>
+      <td style="text-align:right">
+        <div class="action-group" style="justify-content:flex-end">
+          <button class="action-btn view" onclick="viewEmployee(${e.employeeId})" title="View Details">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
           ${Auth.isManager() ? `
-          <button class="action-btn edit"     onclick="editEmployee(${e.employeeId})"    title="Edit Employee">✏️</button>
-          <button class="action-btn transfer" onclick="openTransfer(${e.employeeId})"    title="Transfer Department">🔄</button>` : ''}
+          <button class="action-btn edit" onclick="editEmployee(${e.employeeId})" title="Edit Employee">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+          </button>
+          <button class="action-btn transfer" onclick="openTransfer(${e.employeeId})" title="Transfer Department">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+          </button>` : ''}
           ${Auth.isAdmin() ? `
-          <button class="action-btn delete"   onclick="deactivateEmployee(${e.employeeId}, '${e.fullName}')" title="Deactivate">🗑</button>` : ''}
+          <button class="action-btn delete" onclick="deactivateEmployee(${e.employeeId}, '${e.fullName}')" title="Deactivate">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+          </button>` : ''}
         </div>
       </td>
     </tr>`).join('');
@@ -320,25 +333,25 @@ async function viewEmployee(id) {
       </div>
       <div class="modal-body">
         <div class="detail-grid">
-          <div class="form-section-title" style="grid-column:1/-1">📋 Employment Details</div>
+          <div class="form-section-title" style="grid-column:1/-1">Employment Details</div>
           ${detailField('Department', e.departmentName)}
           ${detailField('Role / Designation', e.roleName)}
           ${detailField('Joining Date', formatDate(e.joiningDate))}
           ${detailField('Annual Salary', formatCurrency(e.annualSalary))}
           ${detailField('Employee Status', `<span class="badge badge-${e.employeeStatus.toLowerCase()}"><span class="badge-dot"></span>${e.employeeStatus}</span>`)}
 
-          <div class="form-section-title" style="grid-column:1/-1">👤 Personal Information</div>
+          <div class="form-section-title" style="grid-column:1/-1">Personal Information</div>
           ${detailField('Email', `<a href="mailto:${e.email}">${e.email}</a>`)}
           ${detailField('Mobile', e.mobileNumber)}
           ${detailField('Gender', e.gender)}
           ${detailField('Date of Birth', formatDate(e.dateOfBirth))}
           ${detailField('Address', e.address)}
 
-          <div class="form-section-title" style="grid-column:1/-1">🔒 Identity Documents</div>
+          <div class="form-section-title" style="grid-column:1/-1">Identity & Tax Documents</div>
           ${detailField('Aadhaar Number', `<code>${e.aadhaarNumber || '—'}</code>`)}
           ${detailField('PAN Number', `<code>${e.panNumber || '—'}</code>`)}
 
-          <div class="form-section-title" style="grid-column:1/-1">📅 Record Info</div>
+          <div class="form-section-title" style="grid-column:1/-1">Record Audit</div>
           ${detailField('Created At', formatDate(e.createdAt))}
           ${detailField('Last Updated', formatDate(e.updatedAt))}
         </div>
@@ -347,7 +360,7 @@ async function viewEmployee(id) {
     // Load transfer history inline
     loadTransferHistoryInDetail(id);
   } catch (err) {
-    body.innerHTML = `<div class="empty-state"><div class="empty-icon">❌</div><h3>Failed to load employee</h3><p>${err.message}</p></div>`;
+    body.innerHTML = `<div class="empty-state"><div class="empty-icon"><svg class="svg-icon" style="width:30px;height:30px" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><h3>Failed to load employee</h3><p>${err.message}</p></div>`;
   }
 }
 
@@ -360,7 +373,7 @@ async function loadTransferHistoryInDetail(id) {
     const sec  = document.createElement('div');
     sec.innerHTML = `
       <div class="modal-body" style="padding-top:0">
-        <div class="form-section-title" style="margin-top:0">🔄 Transfer History</div>
+        <div class="form-section-title" style="margin-top:0">Transfer History</div>
         <div class="table-wrapper">
           <table>
             <thead><tr>
@@ -391,7 +404,7 @@ function openCreateForm() {
   empState.editingId = null;
   const title = document.getElementById('form-modal-title');
   const form  = document.getElementById('emp-form');
-  if (title) title.textContent = '➕ Add New Employee';
+  if (title) title.textContent = 'Add New Employee';
   if (form)  form.reset();
   clearAllErrors(form);
   document.getElementById('form-emp-code-display').textContent = 'Auto-generated';
@@ -401,7 +414,7 @@ function openCreateForm() {
 async function editEmployee(id) {
   empState.editingId = id;
   openModal('form-modal');
-  document.getElementById('form-modal-title').textContent = '✏️ Edit Employee';
+  document.getElementById('form-modal-title').textContent = 'Edit Employee';
   try {
     const res = await EmployeeApi.getById(id);
     const e   = res.data;
@@ -545,7 +558,7 @@ async function saveEmployee() {
   } catch (err) {
     Toast.error('Save failed', err.message);
   } finally {
-    setLoading(btn, false, empState.editingId ? '💾 Update Employee' : '✅ Create Employee');
+    setLoading(btn, false, empState.editingId ? 'Save Changes' : 'Create Employee');
   }
 }
 
@@ -636,7 +649,7 @@ async function doTransfer() {
   } catch (err) {
     Toast.error('Transfer failed', err.message);
   } finally {
-    setLoading(btn, false, '🔄 Confirm Transfer');
+    setLoading(btn, false, 'Confirm Transfer');
   }
 }
 

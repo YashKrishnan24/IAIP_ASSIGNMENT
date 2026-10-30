@@ -16,10 +16,10 @@ const Toast = (() => {
   }
 
   const ICONS = {
-    success: '✅',
-    error:   '❌',
-    warning: '⚠️',
-    info:    'ℹ️',
+    success: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+    error:   `<svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
+    warning: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+    info:    `<svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`,
   };
 
   function show(type, title, message = '', duration = 4000) {
@@ -27,7 +27,7 @@ const Toast = (() => {
     const t = document.createElement('div');
     t.className = `toast ${type}`;
     t.innerHTML = `
-      <span class="toast-icon">${ICONS[type] || 'ℹ️'}</span>
+      <span class="toast-icon">${ICONS[type] || ICONS.info}</span>
       <div class="toast-content">
         <div class="toast-title">${title}</div>
         ${message ? `<div class="toast-msg">${message}</div>` : ''}
@@ -111,7 +111,7 @@ function setFieldError(inputEl, msg) {
     errEl.className = 'form-error';
     inputEl.after(errEl);
   }
-  errEl.textContent = `⚠ ${msg}`;
+  errEl.textContent = msg;
 }
 
 function clearFieldError(inputEl) {
@@ -128,7 +128,7 @@ function clearAllErrors(form) {
 function setLoading(btn, loading, text = null) {
   if (loading) {
     btn._origText = btn.innerHTML;
-    btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2px;margin:0 4px"></span>';
+    btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin:0 4px"></span>';
     btn.disabled = true;
   } else {
     btn.innerHTML = text || btn._origText || btn.innerHTML;
@@ -186,15 +186,21 @@ function showConfirm(title, message) {
       overlay.id = 'confirm-dialog';
       overlay.className = 'modal-overlay confirm-dialog';
       overlay.innerHTML = `
-        <div class="modal" style="max-width:420px">
+        <div class="modal" style="max-width:400px">
           <div class="modal-body">
-            <div class="confirm-icon-wrap">⚠️</div>
+            <div class="confirm-icon-wrap">
+              <svg class="svg-icon" style="width:22px;height:22px" viewBox="0 0 24 24">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
             <h4 id="confirm-title"></h4>
             <p id="confirm-msg"></p>
           </div>
-          <div class="modal-footer" style="justify-content:center;gap:12px">
-            <button id="confirm-cancel" class="btn btn-outline">Cancel</button>
-            <button id="confirm-ok" class="btn btn-danger">Confirm</button>
+          <div class="modal-footer" style="justify-content:center;gap:10px">
+            <button id="confirm-cancel" class="btn btn-outline btn-sm">Cancel</button>
+            <button id="confirm-ok" class="btn btn-danger btn-sm">Confirm</button>
           </div>
         </div>`;
       document.body.appendChild(overlay);
