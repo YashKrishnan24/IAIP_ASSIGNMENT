@@ -87,6 +87,7 @@ function buildParams() {
   if (f.joiningDateTo)   params.joiningDateTo   = f.joiningDateTo;
   if (f.minSalary)      params.minSalary      = f.minSalary;
   if (f.maxSalary)      params.maxSalary      = f.maxSalary;
+  if (f.isCustomSalaryRange) params.isCustomSalaryRange = true;
   return params;
 }
 
@@ -115,22 +116,22 @@ function renderTable() {
   tbody.innerHTML = empState.employees.map(e => `
     <tr>
       <td>
-        <span class="emp-code-link" onclick="viewEmployee(${e.employeeId})">${e.employeeCode}</span>
+        <span class="emp-code-link" onclick="viewEmployee(${e.employeeId})">${escapeHtml(e.employeeCode)}</span>
       </td>
       <td>
         <div class="d-flex align-center gap-3">
-          <div class="user-avatar" style="width:30px;height:30px;font-size:.72rem">${getInitials(e.fullName)}</div>
-          <span class="fw-600">${e.fullName}</span>
+          <div class="user-avatar" style="width:30px;height:30px;font-size:.72rem">${escapeHtml(getInitials(e.fullName))}</div>
+          <span class="fw-600">${escapeHtml(e.fullName)}</span>
         </div>
       </td>
-      <td><span class="text-sm">${e.departmentName}</span></td>
-      <td><span class="text-sm">${e.roleName}</span></td>
-      <td><span class="text-sm text-muted">${e.email}</span></td>
-      <td><span class="text-sm text-muted">${e.mobileNumber}</span></td>
+      <td><span class="text-sm">${escapeHtml(e.departmentName)}</span></td>
+      <td><span class="text-sm">${escapeHtml(e.roleName)}</span></td>
+      <td><span class="text-sm text-muted">${escapeHtml(e.email)}</span></td>
+      <td><span class="text-sm text-muted">${escapeHtml(e.mobileNumber)}</span></td>
       <td><span class="salary-display">${formatCurrency(e.annualSalary)}</span></td>
       <td>
-        <span class="badge badge-${e.employeeStatus.toLowerCase()}">
-          <span class="badge-dot"></span>${e.employeeStatus}
+        <span class="badge badge-${escapeHtml(e.employeeStatus.toLowerCase())}">
+          <span class="badge-dot"></span>${escapeHtml(e.employeeStatus)}
         </span>
       </td>
       <td style="text-align:right">
@@ -146,7 +147,7 @@ function renderTable() {
             <svg class="svg-icon" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
           </button>` : ''}
           ${Auth.isAdmin() ? `
-          <button class="action-btn delete" onclick="deactivateEmployee(${e.employeeId}, '${e.fullName}')" title="Deactivate">
+          <button class="action-btn delete" onclick="deactivateEmployee(${e.employeeId})" title="Deactivate">
             <svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
           </button>` : ''}
         </div>
@@ -277,6 +278,7 @@ function wireFilterEvents() {
     if (customRow) customRow.classList.add('hidden');
     empState.filters.minSalary = range.min ?? '';
     empState.filters.maxSalary = range.max ?? '';
+    empState.filters.isCustomSalaryRange = false;
     empState.pageNumber = 1;
     loadEmployees();
   });
@@ -284,6 +286,7 @@ function wireFilterEvents() {
   const applyCustomSalary = debounce(() => {
     empState.filters.minSalary = customMin?.value || '';
     empState.filters.maxSalary = customMax?.value || '';
+    empState.filters.isCustomSalaryRange = true;
     empState.pageNumber = 1;
     loadEmployees();
   }, 600);
@@ -297,7 +300,7 @@ function wireFilterEvents() {
 }
 
 function resetFilters() {
-  empState.filters    = { search: '', departmentId: '', roleId: '', status: '', gender: '', joiningDateFrom: '', joiningDateTo: '', minSalary: '', maxSalary: '', salaryRange: '' };
+  empState.filters    = { search: '', departmentId: '', roleId: '', status: '', gender: '', joiningDateFrom: '', joiningDateTo: '', minSalary: '', maxSalary: '', salaryRange: '', isCustomSalaryRange: false };
   empState.pageNumber = 1;
   empState.pageSize   = 10;
   qsa('#filter-dept, #filter-role, #filter-status, #filter-gender, #filter-salary-range').forEach(el => el && (el.value = ''));
@@ -319,14 +322,14 @@ async function viewEmployee(id) {
     const e   = res.data;
     body.innerHTML = `
       <div class="detail-header">
-        <div class="detail-avatar">${getInitials(e.fullName)}</div>
+        <div class="detail-avatar">${escapeHtml(getInitials(e.fullName))}</div>
         <div class="detail-meta">
-          <div class="detail-emp-name">${e.fullName}</div>
-          <div class="detail-emp-code">${e.employeeCode}</div>
-          <div class="detail-emp-role">${e.roleName} · ${e.departmentName}</div>
+          <div class="detail-emp-name">${escapeHtml(e.fullName)}</div>
+          <div class="detail-emp-code">${escapeHtml(e.employeeCode)}</div>
+          <div class="detail-emp-role">${escapeHtml(e.roleName)} · ${escapeHtml(e.departmentName)}</div>
           <div class="mt-4">
-            <span class="badge badge-${e.employeeStatus.toLowerCase()}">
-              <span class="badge-dot"></span>${e.employeeStatus}
+            <span class="badge badge-${escapeHtml(e.employeeStatus.toLowerCase())}">
+              <span class="badge-dot"></span>${escapeHtml(e.employeeStatus)}
             </span>
           </div>
         </div>
@@ -334,22 +337,22 @@ async function viewEmployee(id) {
       <div class="modal-body">
         <div class="detail-grid">
           <div class="form-section-title" style="grid-column:1/-1">Employment Details</div>
-          ${detailField('Department', e.departmentName)}
-          ${detailField('Role / Designation', e.roleName)}
+          ${detailField('Department', escapeHtml(e.departmentName))}
+          ${detailField('Role / Designation', escapeHtml(e.roleName))}
           ${detailField('Joining Date', formatDate(e.joiningDate))}
           ${detailField('Annual Salary', formatCurrency(e.annualSalary))}
-          ${detailField('Employee Status', `<span class="badge badge-${e.employeeStatus.toLowerCase()}"><span class="badge-dot"></span>${e.employeeStatus}</span>`)}
+          ${detailField('Employee Status', `<span class="badge badge-${escapeHtml(e.employeeStatus.toLowerCase())}"><span class="badge-dot"></span>${escapeHtml(e.employeeStatus)}</span>`)}
 
           <div class="form-section-title" style="grid-column:1/-1">Personal Information</div>
-          ${detailField('Email', `<a href="mailto:${e.email}">${e.email}</a>`)}
-          ${detailField('Mobile', e.mobileNumber)}
-          ${detailField('Gender', e.gender)}
+          ${detailField('Email', `<a href="mailto:${escapeHtml(e.email)}">${escapeHtml(e.email)}</a>`)}
+          ${detailField('Mobile', escapeHtml(e.mobileNumber))}
+          ${detailField('Gender', escapeHtml(e.gender))}
           ${detailField('Date of Birth', formatDate(e.dateOfBirth))}
-          ${detailField('Address', e.address)}
+          ${detailField('Address', escapeHtml(e.address))}
 
           <div class="form-section-title" style="grid-column:1/-1">Identity & Tax Documents</div>
-          ${detailField('Aadhaar Number', `<code>${e.aadhaarNumber || '—'}</code>`)}
-          ${detailField('PAN Number', `<code>${e.panNumber || '—'}</code>`)}
+          ${detailField('Aadhaar Number', `<code>${escapeHtml(e.aadhaarNumber || '—')}</code>`)}
+          ${detailField('PAN Number', `<code>${escapeHtml(e.panNumber || '—')}</code>`)}
 
           <div class="form-section-title" style="grid-column:1/-1">Record Audit</div>
           ${detailField('Created At', formatDate(e.createdAt))}
@@ -360,7 +363,7 @@ async function viewEmployee(id) {
     // Load transfer history inline
     loadTransferHistoryInDetail(id);
   } catch (err) {
-    body.innerHTML = `<div class="empty-state"><div class="empty-icon"><svg class="svg-icon" style="width:30px;height:30px" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><h3>Failed to load employee</h3><p>${err.message}</p></div>`;
+    body.innerHTML = `<div class="empty-state"><div class="empty-icon"><svg class="svg-icon" style="width:30px;height:30px" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><h3>Failed to load employee</h3><p>${escapeHtml(err.message)}</p></div>`;
   }
 }
 
@@ -383,9 +386,9 @@ async function loadTransferHistoryInDetail(id) {
               ${history.map(h => `
               <tr>
                 <td>${formatDate(h.transferDate)}</td>
-                <td><div class="history-row"><span>${h.oldDepartmentName}</span><span class="history-arrow">→</span><span>${h.newDepartmentName}</span></div></td>
-                <td><code>${h.oldEmployeeCode}</code> → <code class="emp-code-link">${h.newEmployeeCode}</code></td>
-                <td class="text-sm text-muted">${h.transferReason}</td>
+                <td><div class="history-row"><span>${escapeHtml(h.oldDepartmentName)}</span><span class="history-arrow">→</span><span>${escapeHtml(h.newDepartmentName)}</span></div></td>
+                <td><code>${escapeHtml(h.oldEmployeeCode)}</code> → <code class="emp-code-link">${escapeHtml(h.newEmployeeCode)}</code></td>
+                <td class="text-sm text-muted">${escapeHtml(h.transferReason)}</td>
               </tr>`).join('')}
             </tbody>
           </table>
@@ -408,6 +411,21 @@ function openCreateForm() {
   if (form)  form.reset();
   clearAllErrors(form);
   document.getElementById('form-emp-code-display').textContent = 'Auto-generated';
+
+  // Enable department for creation
+  const deptEl = document.getElementById('form-dept');
+  if (deptEl) deptEl.disabled = false;
+  const hintEl = document.getElementById('dept-edit-hint');
+  if (hintEl) hintEl.classList.add('hidden');
+
+  // Hide status for creation
+  const statusGrp = document.getElementById('form-status-group');
+  if (statusGrp) statusGrp.style.display = 'none';
+
+  // DOB max today
+  const dobEl = document.getElementById('form-dob');
+  if (dobEl) dobEl.max = new Date().toISOString().slice(0, 10);
+
   openModal('form-modal');
 }
 
@@ -415,9 +433,30 @@ async function editEmployee(id) {
   empState.editingId = id;
   openModal('form-modal');
   document.getElementById('form-modal-title').textContent = 'Edit Employee';
+
+  // DOB max today
+  const dobEl = document.getElementById('form-dob');
+  if (dobEl) dobEl.max = new Date().toISOString().slice(0, 10);
+
+  // Lock department on edit
+  const deptEl = document.getElementById('form-dept');
+  if (deptEl) deptEl.disabled = true;
+  const hintEl = document.getElementById('dept-edit-hint');
+  if (hintEl) {
+    hintEl.classList.remove('hidden');
+    hintEl.textContent = 'Department is locked on edit. Use Department Transfer to reassign.';
+  }
+
+  // Show status dropdown
+  const statusGrp = document.getElementById('form-status-group');
+  if (statusGrp) statusGrp.style.display = 'block';
+
   try {
     const res = await EmployeeApi.getById(id);
     const e   = res.data;
+    if (e.departmentId) {
+      await refreshRolesByDept(e.departmentId);
+    }
     fillForm(e);
   } catch (err) {
     closeModal('form-modal');
@@ -466,7 +505,7 @@ function validateEmployeeForm() {
     return new Date(v) < new Date();
   }, 'Date of birth cannot be today or a future date.');
   check('form-address', v => v.length > 0, 'Address is required.');
-  check('form-dept',    v => v !== '',     'Please select a department.');
+  check('form-dept',    v => (empState.editingId != null) || v !== '', 'Please select a department.');
   check('form-role',    v => v !== '',     'Please select a role.');
   check('form-joining', v => v !== '',     'Joining date is required.');
   check('form-salary',  v => parseFloat(v) > 0, 'Salary must be greater than zero.');
@@ -533,7 +572,6 @@ async function saveEmployee() {
     gender:        document.getElementById('form-gender').value,
     dateOfBirth:   document.getElementById('form-dob').value,
     address:       document.getElementById('form-address').value.trim(),
-    departmentId:  parseInt(document.getElementById('form-dept').value),
     roleId:        parseInt(document.getElementById('form-role').value),
     joiningDate:   document.getElementById('form-joining').value,
     annualSalary:  parseFloat(document.getElementById('form-salary').value),
@@ -541,7 +579,9 @@ async function saveEmployee() {
     pANNumber:     document.getElementById('form-pan').value.trim(),
   };
 
-  if (empState.editingId) {
+  if (!empState.editingId) {
+    payload.departmentId = parseInt(document.getElementById('form-dept').value);
+  } else {
     payload.employeeStatus = document.getElementById('form-status').value;
   }
 
@@ -563,7 +603,9 @@ async function saveEmployee() {
 }
 
 // ─── Deactivate ───────────────────────────────────────────────────────────────
-async function deactivateEmployee(id, name) {
+async function deactivateEmployee(id) {
+  const emp = empState.employees.find(e => e.employeeId === id);
+  const name = emp ? emp.fullName : 'this employee';
   const confirmed = await showConfirm(
     `Deactivate ${name}?`,
     'This will set the employee status to Inactive. You can reactivate them by editing later.'

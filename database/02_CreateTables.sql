@@ -94,15 +94,16 @@ GO
 CREATE TABLE EmployeePersonalDetails (
     PersonalDetailId INT IDENTITY(1,1) PRIMARY KEY,
     EmployeeId       INT             NOT NULL,
-    AadhaarNumber    NVARCHAR(14)    NOT NULL,  -- stored as XXXX-XXXX-XXXX
-    PANNumber        NVARCHAR(10)    NOT NULL,  -- ABCDE1234F
+    AadhaarEncrypted NVARCHAR(500)   NOT NULL,  -- AES-256 encrypted
+    AadhaarHash      VARCHAR(64)     NOT NULL,  -- HMAC-SHA256 for unique lookup
+    PANEncrypted     NVARCHAR(500)   NOT NULL,  -- AES-256 encrypted
+    PANHash          VARCHAR(64)     NOT NULL,  -- HMAC-SHA256 for unique lookup
     UpdatedAt        DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
     CONSTRAINT FK_EmpPD_Employee FOREIGN KEY (EmployeeId)
         REFERENCES Employees (EmployeeId) ON DELETE CASCADE,
-    CONSTRAINT UQ_EmpPD_Aadhaar  UNIQUE (AadhaarNumber),
-    CONSTRAINT UQ_EmpPD_PAN      UNIQUE (PANNumber),
-    CONSTRAINT CK_EmpPD_PAN      CHECK (PANNumber LIKE '[A-Z][A-Z][A-Z][A-Z][A-Z][0-9][0-9][0-9][0-9][A-Z]')
+    CONSTRAINT UQ_EmpPD_AadhaarHash UNIQUE (AadhaarHash),
+    CONSTRAINT UQ_EmpPD_PANHash     UNIQUE (PANHash)
 );
 GO
 

@@ -28,7 +28,6 @@ public class AuthService : IAuthService
     public async Task<LoginResponse?> LoginAsync(LoginRequest request)
     {
         var user = await _ctx.Users
-            .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Email == request.Email && u.IsActive);
 
         if (user is null) return null;
@@ -36,12 +35,9 @@ public class AuthService : IAuthService
         if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             return null;
 
-        // Update last login (fire and forget in background)
-        _ = Task.Run(async () =>
-        {
-            var u = await _ctx.Users.FindAsync(user.UserId);
-            if (u is not null) { u.LastLoginAt = DateTime.UtcNow; await _ctx.SaveChangesAsync(); }
-        });
+        // Reliably update last login timestamp
+        user.LastLoginAt = DateTime.UtcNow;
+        await _ctx.SaveChangesAsync();
 
         var token   = GenerateJwtToken(user);
         var expiry  = DateTime.UtcNow.AddMinutes(

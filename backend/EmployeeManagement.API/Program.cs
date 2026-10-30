@@ -2,6 +2,7 @@ using System.Text;
 using EmployeeManagement.API.Data;
 using EmployeeManagement.API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -13,13 +14,14 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
         sql => sql.CommandTimeout(60)));
 
-// ─── Services ─────────────────────────────────────────────────────────────────
+// ─── Application Services ─────────────────────────────────────────────────────
+builder.Services.AddSingleton<IEncryptionService, EncryptionService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 // ─── JWT Auth ─────────────────────────────────────────────────────────────────
 var jwtSection = builder.Configuration.GetSection("JwtSettings");
-var secretKey   = jwtSection["SecretKey"]!;
+var secretKey   = jwtSection["SecretKey"] ?? "EmployeeManagement$SuperSecret#Key2024!@#JWT";
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>
@@ -30,8 +32,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience         = true,
             ValidateLifetime         = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer              = jwtSection["Issuer"],
-            ValidAudience            = jwtSection["Audience"],
+            ValidIssuer              = jwtSection["Issuer"] ?? "EmployeeManagementAPI",
+            ValidAudience            = jwtSection["Audience"] ?? "EmployeeManagementClient",
             IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
             ClockSkew                = TimeSpan.Zero,
         };
@@ -59,10 +61,9 @@ builder.Services.AddSwaggerGen(c =>
     {
         Title       = "Employee Management API",
         Version     = "v1",
-        Description = "REST API for the Employee Management System",
+        Description = "REST API for Employee Management System with CRUD, transfers, and RBAC.",
     });
 
-    // JWT bearer scheme in Swagger
     var jwtScheme = new OpenApiSecurityScheme
     {
         BearerFormat = "JWT",
@@ -70,15 +71,42 @@ builder.Services.AddSwaggerGen(c =>
         In           = ParameterLocation.Header,
         Type         = SecuritySchemeType.Http,
         Scheme       = JwtBearerDefaults.AuthenticationScheme,
-        Description  = "Enter your JWT token (without 'Bearer' prefix).",
+        Description  = "Enter your JWT Bearer token.",
         Reference    = new OpenApiReference { Id = "Bearer", Type = ReferenceType.SecurityScheme },
     };
     c.AddSecurityDefinition("Bearer", jwtScheme);
     c.AddSecurityRequirement(new OpenApiSecurityRequirement { { jwtScheme, Array.Empty<string>() } });
 });
 
-// ─── Build ────────────────────────────────────────────────────────────────────
+// ─── Build & Pipeline ─────────────────────────────────────────────────────────
 var app = builder.Build();
+
+// 1. Global Error Handler (FIRST in pipeline to catch all downstream errors)
+app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
+{
+    var exceptionFeature = ctx.Features.Get<IExceptionHandlerFeature>();
+    var ex = exceptionFeature?.Error;
+
+    var (statusCode, message) = ex switch
+    {
+        KeyNotFoundException knf => (StatusCodes.Status404NotFound, knf.Message),
+        ArgumentException arg   => (StatusCodes.Status400BadRequest, arg.Message),
+        InvalidOperationException inv => (StatusCodes.Status400BadRequest, inv.Message),
+        DbUpdateException dbEx when dbEx.InnerException?.Message.Contains("UNIQUE") == true
+            || dbEx.InnerException?.Message.Contains("duplicate") == true
+            => (StatusCodes.Status409Conflict, "A record with this unique identifier (Email, Aadhaar, PAN, or Employee Code) already exists."),
+        DbUpdateException => (StatusCodes.Status409Conflict, "Database conflict occurred."),
+        _ => (StatusCodes.Status500InternalServerError, "An unexpected server error occurred.")
+    };
+
+    ctx.Response.StatusCode  = statusCode;
+    ctx.Response.ContentType = "application/json";
+    await ctx.Response.WriteAsJsonAsync(new
+    {
+        success = false,
+        message = message,
+    });
+}));
 
 app.UseCors("FrontendPolicy");
 
@@ -95,17 +123,5 @@ if (app.Environment.IsDevelopment())
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-
-// ─── Global error handler ─────────────────────────────────────────────────────
-app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
-{
-    ctx.Response.StatusCode  = 500;
-    ctx.Response.ContentType = "application/json";
-    await ctx.Response.WriteAsJsonAsync(new
-    {
-        success = false,
-        message = "An unexpected error occurred. Please try again later.",
-    });
-}));
 
 app.Run();

@@ -72,6 +72,10 @@ public class EmployeesController : ControllerBase
             return CreatedAtAction(nameof(GetEmployee), new { id = emp.EmployeeId },
                 ApiResponse<EmployeeDetailDto>.Ok(emp, "Employee created successfully."));
         }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ApiResponse<object>.Fail(ex.Message));
+        }
         catch (InvalidOperationException ex)
         {
             return Conflict(ApiResponse<object>.Fail(ex.Message));
@@ -96,6 +100,7 @@ public class EmployeesController : ControllerBase
             return Ok(ApiResponse<EmployeeDetailDto>.Ok(emp, "Employee updated successfully."));
         }
         catch (KeyNotFoundException ex) { return NotFound(ApiResponse<object>.Fail(ex.Message)); }
+        catch (ArgumentException ex) { return BadRequest(ApiResponse<object>.Fail(ex.Message)); }
         catch (InvalidOperationException ex) { return Conflict(ApiResponse<object>.Fail(ex.Message)); }
     }
 
@@ -130,6 +135,7 @@ public class EmployeesController : ControllerBase
                 $"Employee transferred successfully. New code: {newCode}"));
         }
         catch (KeyNotFoundException ex)   { return NotFound(ApiResponse<object>.Fail(ex.Message)); }
+        catch (ArgumentException ex)      { return BadRequest(ApiResponse<object>.Fail(ex.Message)); }
         catch (InvalidOperationException ex) { return BadRequest(ApiResponse<object>.Fail(ex.Message)); }
     }
 

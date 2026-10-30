@@ -186,15 +186,15 @@
     tbody.innerHTML = data.map((h, i) => `
       <tr>
         <td class="text-muted text-sm">${i + 1}</td>
-        <td class="fw-600">${h.employeeFullName}</td>
-        <td>${h.oldDepartmentName}</td>
-        <td>${h.newDepartmentName}</td>
-        <td><code style="color:var(--clr-text-3)">${h.oldEmployeeCode}</code></td>
-        <td><code class="emp-code-link">${h.newEmployeeCode}</code></td>
-        <td class="text-sm text-muted">${h.oldRoleName}</td>
-        <td class="text-sm">${h.newRoleName}</td>
+        <td class="fw-600">${escapeHtml(h.employeeFullName)}</td>
+        <td>${escapeHtml(h.oldDepartmentName)}</td>
+        <td>${escapeHtml(h.newDepartmentName)}</td>
+        <td><code style="color:var(--clr-text-3)">${escapeHtml(h.oldEmployeeCode)}</code></td>
+        <td><code class="emp-code-link">${escapeHtml(h.newEmployeeCode)}</code></td>
+        <td class="text-sm text-muted">${escapeHtml(h.oldRoleName)}</td>
+        <td class="text-sm">${escapeHtml(h.newRoleName)}</td>
         <td class="text-sm text-muted">${formatDate(h.transferDate)}</td>
-        <td class="text-sm text-muted" style="max-width:220px">${h.transferReason}</td>
+        <td class="text-sm text-muted" style="max-width:220px">${escapeHtml(h.transferReason)}</td>
       </tr>`).join('');
   }
 

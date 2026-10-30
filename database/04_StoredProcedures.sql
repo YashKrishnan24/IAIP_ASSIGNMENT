@@ -8,6 +8,7 @@ GO
 
 -- ─────────────────────────────────────────────
 -- SP: Generate next Employee Code for a department
+-- Concurrency safe with UPDLOCK, ROWLOCK
 -- ─────────────────────────────────────────────
 CREATE OR ALTER PROCEDURE sp_GenerateEmployeeCode
     @DepartmentId   INT,
@@ -27,7 +28,8 @@ BEGIN
             IF @DeptCode IS NULL
                 THROW 50001, 'Department not found.', 1;
 
-            UPDATE EmployeeCodeSequences
+            -- Atomic increment with UPDLOCK, ROWLOCK prevents race conditions
+            UPDATE EmployeeCodeSequences WITH (UPDLOCK, ROWLOCK)
             SET    LastSequence = LastSequence + 1,
                    UpdatedAt   = GETUTCDATE()
             WHERE  DepartmentId = @DepartmentId;
@@ -80,7 +82,7 @@ BEGIN
             IF @CurrentDeptId = @NewDepartmentId
                 THROW 50003, 'Employee is already in the target department.', 1;
 
-            -- Generate new employee code
+            -- Generate new employee code atomically
             DECLARE @NewCode NVARCHAR(10);
             EXEC sp_GenerateEmployeeCode @NewDepartmentId, @NewCode OUTPUT;
 
@@ -116,20 +118,21 @@ GO
 -- SP: Search / Filter / Sort / Paginate Employees
 -- ─────────────────────────────────────────────
 CREATE OR ALTER PROCEDURE sp_GetEmployees
-    @Search         NVARCHAR(200)   = NULL,
-    @DepartmentId   INT             = NULL,
-    @RoleId         INT             = NULL,
-    @Status         NVARCHAR(20)    = NULL,
-    @Gender         NVARCHAR(10)    = NULL,
-    @JoiningDateFrom DATE           = NULL,
-    @JoiningDateTo  DATE            = NULL,
-    @MinSalary      DECIMAL(18,2)   = NULL,
-    @MaxSalary      DECIMAL(18,2)   = NULL,
-    @SortBy         NVARCHAR(50)    = 'EmployeeCode',
-    @SortDirection  NVARCHAR(4)     = 'ASC',
-    @PageNumber     INT             = 1,
-    @PageSize       INT             = 10,
-    @TotalCount     INT             OUTPUT
+    @Search              NVARCHAR(200)   = NULL,
+    @DepartmentId        INT             = NULL,
+    @RoleId              INT             = NULL,
+    @Status              NVARCHAR(20)    = NULL,
+    @Gender              NVARCHAR(10)    = NULL,
+    @JoiningDateFrom     DATE            = NULL,
+    @JoiningDateTo       DATE            = NULL,
+    @MinSalary           DECIMAL(18,2)   = NULL,
+    @MaxSalary           DECIMAL(18,2)   = NULL,
+    @IsCustomSalaryRange BIT             = 0,
+    @SortBy              NVARCHAR(50)    = 'EmployeeCode',
+    @SortDirection       NVARCHAR(4)     = 'ASC',
+    @PageNumber          INT             = 1,
+    @PageSize            INT             = 10,
+    @TotalCount          INT             OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -171,7 +174,7 @@ BEGIN
         WHERE 1 = 1
     ';
 
-    -- Global search (exclude Aadhaar/PAN for security)
+    -- Global search (exclude sensitive Aadhaar/PAN for security)
     IF @Search IS NOT NULL AND @Search <> ''
         SET @sql = @sql + N'
         AND (
@@ -208,7 +211,12 @@ BEGIN
         SET @sql = @sql + N' AND e.AnnualSalary >= @MinSalary';
 
     IF @MaxSalary IS NOT NULL
-        SET @sql = @sql + N' AND e.AnnualSalary < @MaxSalary';
+    BEGIN
+        IF @IsCustomSalaryRange = 1
+            SET @sql = @sql + N' AND e.AnnualSalary <= @MaxSalary';
+        ELSE
+            SET @sql = @sql + N' AND e.AnnualSalary < @MaxSalary';
+    END
 
     SET @sql = @sql + N'
     )
@@ -229,6 +237,7 @@ BEGIN
         @JoiningDateTo DATE,
         @MinSalary DECIMAL(18,2),
         @MaxSalary DECIMAL(18,2),
+        @IsCustomSalaryRange BIT,
         @PageNumber INT,
         @PageSize INT,
         @TotalCount INT OUTPUT';
@@ -236,7 +245,7 @@ BEGIN
     EXEC sp_executesql @sql, @params,
         @Search, @DepartmentId, @RoleId, @Status, @Gender,
         @JoiningDateFrom, @JoiningDateTo,
-        @MinSalary, @MaxSalary,
+        @MinSalary, @MaxSalary, @IsCustomSalaryRange,
         @PageNumber, @PageSize,
         @TotalCount OUTPUT;
 END;

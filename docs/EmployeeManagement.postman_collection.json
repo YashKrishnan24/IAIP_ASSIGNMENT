@@ -1,0 +1,251 @@
+{
+  "info": {
+    "_postman_id": "a9b1c2d3-e4f5-4a6b-8c7d-0e1f2a3b4c5d",
+    "name": "Employee Management System API",
+    "description": "Complete Postman collection for Employee Management System REST API (CRUD, Department Transfers, RBAC, Filters, and Encryption).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000", "type": "string" },
+    { "key": "jwtToken", "value": "", "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{jwtToken}}", "type": "string" }
+    ]
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set('jwtToken', jsonData.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@company.com\",\n  \"password\": \"Admin@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login (Manager)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"manager@company.com\",\n  \"password\": \"Manager@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login (Employee)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"employee@company.com\",\n  \"password\": \"Employee@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Employees",
+      "item": [
+        {
+          "name": "Get Employees (Search, Filter, Paging)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/employees?search=Rahul&pageNumber=1&pageSize=10&sortBy=EmployeeCode&sortDirection=ASC",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees"],
+              "query": [
+                { "key": "search", "value": "Rahul" },
+                { "key": "departmentId", "value": "1", "disabled": true },
+                { "key": "roleId", "value": "1", "disabled": true },
+                { "key": "status", "value": "Active", "disabled": true },
+                { "key": "gender", "value": "Male", "disabled": true },
+                { "key": "minSalary", "value": "300000", "disabled": true },
+                { "key": "maxSalary", "value": "1000000", "disabled": true },
+                { "key": "isCustomSalaryRange", "value": "true", "disabled": true },
+                { "key": "pageNumber", "value": "1" },
+                { "key": "pageSize", "value": "10" },
+                { "key": "sortBy", "value": "EmployeeCode" },
+                { "key": "sortDirection", "value": "ASC" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Employee by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/employees/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees", "1"]
+            }
+          }
+        },
+        {
+          "name": "Create Employee",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Kavita Sundaram\",\n  \"email\": \"kavita.sundaram@company.com\",\n  \"mobileNumber\": \"9123456780\",\n  \"gender\": \"Female\",\n  \"dateOfBirth\": \"1995-04-12\",\n  \"address\": \"42 Indiranagar, Bengaluru, Karnataka\",\n  \"departmentId\": 1,\n  \"roleId\": 1,\n  \"joiningDate\": \"2024-02-01\",\n  \"annualSalary\": 750000,\n  \"aadhaarNumber\": \"9876-5432-1098\",\n  \"panNumber\": \"ABCDE9876F\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employees",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees"]
+            }
+          }
+        },
+        {
+          "name": "Update Employee",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Rahul Sharma\",\n  \"email\": \"rahul.sharma@company.com\",\n  \"mobileNumber\": \"9876543210\",\n  \"gender\": \"Male\",\n  \"dateOfBirth\": \"1992-05-14\",\n  \"address\": \"12 MG Road, Bengaluru, Karnataka 560001 (Updated)\",\n  \"roleId\": 2,\n  \"joiningDate\": \"2021-03-01\",\n  \"annualSalary\": 650000,\n  \"employeeStatus\": \"Active\",\n  \"aadhaarNumber\": \"1234-5678-9012\",\n  \"panNumber\": \"ABCDE1234F\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employees/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees", "1"]
+            }
+          }
+        },
+        {
+          "name": "Deactivate Employee",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/employees/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees", "1"]
+            }
+          }
+        },
+        {
+          "name": "Transfer Employee",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": 1,\n  \"newDepartmentId\": 2,\n  \"newRoleId\": 4,\n  \"transferDate\": \"2024-03-01\",\n  \"transferReason\": \"Cross-department transition from IT to HR operations.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employees/transfer",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees", "transfer"]
+            }
+          }
+        },
+        {
+          "name": "Get Transfer History",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/employees/6/transfer-history",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees", "6", "transfer-history"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lookups",
+      "item": [
+        {
+          "name": "Get Departments",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/departments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "departments"]
+            }
+          }
+        },
+        {
+          "name": "Get All Roles",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "roles"]
+            }
+          }
+        },
+        {
+          "name": "Get Roles by Department",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/roles/department/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "roles", "department", "1"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

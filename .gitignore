@@ -13,6 +13,11 @@ bld/
 [Ll]og/
 [Ll]ogs/
 
+# Sensitive configuration and local secrets
+appsettings.Development.json
+appsettings.*.local.json
+*.local.json
+
 # Visual Studio / VS Code
 .vs/
 .vscode/*
@@ -28,4 +33,3 @@ bld/
 .DS_Store
 Thumbs.db
 *.zip
-

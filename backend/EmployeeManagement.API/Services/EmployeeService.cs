@@ -18,8 +18,13 @@ public interface IEmployeeService
 public class EmployeeService : IEmployeeService
 {
     private readonly Data.AppDbContext _ctx;
+    private readonly IEncryptionService _crypto;
 
-    public EmployeeService(Data.AppDbContext ctx) => _ctx = ctx;
+    public EmployeeService(Data.AppDbContext ctx, IEncryptionService crypto)
+    {
+        _ctx = ctx;
+        _crypto = crypto;
+    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // GET (paged, filtered, sorted)
@@ -32,7 +37,7 @@ public class EmployeeService : IEmployeeService
             .AsNoTracking()
             .AsQueryable();
 
-        // Global search (exclude Aadhaar/PAN)
+        // Global search (strictly excludes sensitive Aadhaar and PAN for security)
         if (!string.IsNullOrWhiteSpace(f.Search))
         {
             var s = f.Search.ToLower();
@@ -55,7 +60,14 @@ public class EmployeeService : IEmployeeService
         if (f.JoiningDateFrom.HasValue) query = query.Where(e => e.JoiningDate >= f.JoiningDateFrom);
         if (f.JoiningDateTo.HasValue)   query = query.Where(e => e.JoiningDate <= f.JoiningDateTo);
         if (f.MinSalary.HasValue)       query = query.Where(e => e.AnnualSalary >= f.MinSalary);
-        if (f.MaxSalary.HasValue)       query = query.Where(e => e.AnnualSalary < f.MaxSalary);
+        
+        // Custom max includes boundary (<=), whereas preset brackets use (<)
+        if (f.MaxSalary.HasValue)
+        {
+            query = f.IsCustomSalaryRange
+                ? query.Where(e => e.AnnualSalary <= f.MaxSalary)
+                : query.Where(e => e.AnnualSalary < f.MaxSalary);
+        }
 
         // Sorting
         query = (f.SortBy, f.SortDirection?.ToUpper()) switch
@@ -112,7 +124,7 @@ public class EmployeeService : IEmployeeService
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // GET by ID (with PII)
+    // GET by ID (with decrypted PII)
     // ─────────────────────────────────────────────────────────────────────────
     public async Task<EmployeeDetailDto?> GetEmployeeByIdAsync(int id)
     {
@@ -133,26 +145,40 @@ public class EmployeeService : IEmployeeService
     // ─────────────────────────────────────────────────────────────────────────
     public async Task<EmployeeDetailDto> CreateEmployeeAsync(CreateEmployeeRequest req)
     {
-        // Duplicate checks
+        // 1. Server-side foreign key and relationship validations
+        var dept = await _ctx.Departments.FindAsync(req.DepartmentId);
+        if (dept is null || !dept.IsActive)
+            throw new ArgumentException("The specified department does not exist or is inactive.");
+
+        var role = await _ctx.Roles.FindAsync(req.RoleId);
+        if (role is null || !role.IsActive)
+            throw new ArgumentException("The specified role does not exist or is inactive.");
+
+        if (role.DepartmentId.HasValue && role.DepartmentId.Value != req.DepartmentId)
+            throw new ArgumentException($"The role '{role.RoleName}' does not belong to the '{dept.DepartmentName}' department.");
+
+        // 2. Date of birth validation
+        if (req.DateOfBirth >= DateOnly.FromDateTime(DateTime.Today))
+            throw new ArgumentException("Date of birth cannot be today or a future date.");
+
+        // 3. Duplicate checks using deterministic hashes
         if (await _ctx.Employees.AnyAsync(e => e.Email == req.Email))
             throw new InvalidOperationException("Email address is already registered.");
 
-        if (await _ctx.EmployeePersonalDetails.AnyAsync(p => p.AadhaarNumber == req.AadhaarNumber))
+        var aadhaarHash = _crypto.ComputeHash(req.AadhaarNumber);
+        if (await _ctx.EmployeePersonalDetails.AnyAsync(p => p.AadhaarHash == aadhaarHash))
             throw new InvalidOperationException("Aadhaar number is already registered.");
 
-        if (await _ctx.EmployeePersonalDetails.AnyAsync(p => p.PANNumber == req.PANNumber))
+        var panHash = _crypto.ComputeHash(req.PANNumber);
+        if (await _ctx.EmployeePersonalDetails.AnyAsync(p => p.PANHash == panHash))
             throw new InvalidOperationException("PAN number is already registered.");
 
-        // Date of birth validation
-        if (req.DateOfBirth >= DateOnly.FromDateTime(DateTime.Today))
-            throw new InvalidOperationException("Date of birth cannot be today or a future date.");
-
-        // Generate employee code
-        var code = await GenerateCodeAsync(req.DepartmentId);
-
+        // 4. Atomic transaction with race-proof sequence generation (UPDLOCK, ROWLOCK)
         using var tx = await _ctx.Database.BeginTransactionAsync();
         try
         {
+            var code = await GenerateCodeInsideTxAsync(req.DepartmentId, dept.DepartmentCode);
+
             var emp = new Employee
             {
                 EmployeeCode   = code,
@@ -172,13 +198,17 @@ public class EmployeeService : IEmployeeService
             _ctx.Employees.Add(emp);
             await _ctx.SaveChangesAsync();
 
+            // Encrypt sensitive PII with AES-256 before persisting
             _ctx.EmployeePersonalDetails.Add(new EmployeePersonalDetail
             {
-                EmployeeId    = emp.EmployeeId,
-                AadhaarNumber = req.AadhaarNumber,
-                PANNumber     = req.PANNumber,
+                EmployeeId       = emp.EmployeeId,
+                AadhaarEncrypted = _crypto.Encrypt(req.AadhaarNumber),
+                AadhaarHash      = aadhaarHash,
+                PANEncrypted     = _crypto.Encrypt(req.PANNumber),
+                PANHash          = panHash,
             });
             await _ctx.SaveChangesAsync();
+
             await tx.CommitAsync();
 
             return (await GetEmployeeByIdAsync(emp.EmployeeId))!;
@@ -200,18 +230,37 @@ public class EmployeeService : IEmployeeService
             .FirstOrDefaultAsync(e => e.EmployeeId == id)
             ?? throw new KeyNotFoundException("Employee not found.");
 
-        // Duplicate email check (exclude self)
+        // Rule: Department cannot be altered through normal update; must use Department Transfer
+        if (req.DepartmentId != emp.DepartmentId)
+            throw new ArgumentException("Department cannot be modified through employee update. Please use the Department Transfer feature.");
+
+        // Validate Role
+        var role = await _ctx.Roles.FindAsync(req.RoleId);
+        if (role is null || !role.IsActive)
+            throw new ArgumentException("The specified role does not exist or is inactive.");
+
+        if (role.DepartmentId.HasValue && role.DepartmentId.Value != emp.DepartmentId)
+            throw new ArgumentException($"The role '{role.RoleName}' does not belong to the employee's current department.");
+
+        // Validate Status
+        if (req.EmployeeStatus != "Active" && req.EmployeeStatus != "Inactive")
+            throw new ArgumentException("Employee status must be either 'Active' or 'Inactive'.");
+
+        // Validate DOB
+        if (req.DateOfBirth >= DateOnly.FromDateTime(DateTime.Today))
+            throw new ArgumentException("Date of birth cannot be today or a future date.");
+
+        // Duplicate checks (exclude self)
         if (await _ctx.Employees.AnyAsync(e => e.Email == req.Email && e.EmployeeId != id))
             throw new InvalidOperationException("Email address is already in use.");
 
-        if (await _ctx.EmployeePersonalDetails.AnyAsync(p => p.AadhaarNumber == req.AadhaarNumber && p.EmployeeId != id))
+        var aadhaarHash = _crypto.ComputeHash(req.AadhaarNumber);
+        if (await _ctx.EmployeePersonalDetails.AnyAsync(p => p.AadhaarHash == aadhaarHash && p.EmployeeId != id))
             throw new InvalidOperationException("Aadhaar number is already registered.");
 
-        if (await _ctx.EmployeePersonalDetails.AnyAsync(p => p.PANNumber == req.PANNumber && p.EmployeeId != id))
+        var panHash = _crypto.ComputeHash(req.PANNumber);
+        if (await _ctx.EmployeePersonalDetails.AnyAsync(p => p.PANHash == panHash && p.EmployeeId != id))
             throw new InvalidOperationException("PAN number is already registered.");
-
-        if (req.DateOfBirth >= DateOnly.FromDateTime(DateTime.Today))
-            throw new InvalidOperationException("Date of birth cannot be today or a future date.");
 
         emp.FullName       = req.FullName;
         emp.Email          = req.Email;
@@ -227,9 +276,11 @@ public class EmployeeService : IEmployeeService
 
         if (emp.PersonalDetail is not null)
         {
-            emp.PersonalDetail.AadhaarNumber = req.AadhaarNumber;
-            emp.PersonalDetail.PANNumber     = req.PANNumber;
-            emp.PersonalDetail.UpdatedAt     = DateTime.UtcNow;
+            emp.PersonalDetail.AadhaarEncrypted = _crypto.Encrypt(req.AadhaarNumber);
+            emp.PersonalDetail.AadhaarHash      = aadhaarHash;
+            emp.PersonalDetail.PANEncrypted     = _crypto.Encrypt(req.PANNumber);
+            emp.PersonalDetail.PANHash          = panHash;
+            emp.PersonalDetail.UpdatedAt        = DateTime.UtcNow;
         }
 
         await _ctx.SaveChangesAsync();
@@ -264,11 +315,22 @@ public class EmployeeService : IEmployeeService
         if (emp.DepartmentId == req.NewDepartmentId)
             throw new InvalidOperationException("Employee is already in the target department.");
 
-        var newCode = await GenerateCodeAsync(req.NewDepartmentId);
+        var newDept = await _ctx.Departments.FindAsync(req.NewDepartmentId);
+        if (newDept is null || !newDept.IsActive)
+            throw new ArgumentException("The target department does not exist or is inactive.");
+
+        var newRole = await _ctx.Roles.FindAsync(req.NewRoleId);
+        if (newRole is null || !newRole.IsActive)
+            throw new ArgumentException("The target role does not exist or is inactive.");
+
+        if (newRole.DepartmentId.HasValue && newRole.DepartmentId.Value != req.NewDepartmentId)
+            throw new ArgumentException($"The role '{newRole.RoleName}' does not belong to the target department '{newDept.DepartmentName}'.");
 
         using var tx = await _ctx.Database.BeginTransactionAsync();
         try
         {
+            var newCode = await GenerateCodeInsideTxAsync(req.NewDepartmentId, newDept.DepartmentCode);
+
             var history = new EmployeeTransferHistory
             {
                 EmployeeId       = emp.EmployeeId,
@@ -335,22 +397,28 @@ public class EmployeeService : IEmployeeService
     // ─────────────────────────────────────────────────────────────────────────
     // Helpers
     // ─────────────────────────────────────────────────────────────────────────
-    private async Task<string> GenerateCodeAsync(int departmentId)
+
+    /// <summary>
+    /// Atomically increments and retrieves the next sequence for a department
+    /// using SQL Server row-level locking (UPDLOCK, ROWLOCK) to completely prevent race conditions.
+    /// </summary>
+    private async Task<string> GenerateCodeInsideTxAsync(int departmentId, string deptCode)
     {
-        var dept = await _ctx.Departments.FindAsync(departmentId)
-            ?? throw new KeyNotFoundException("Department not found.");
+        var seqResult = await _ctx.Database.SqlQueryRaw<int>(
+            @"UPDATE EmployeeCodeSequences WITH (UPDLOCK, ROWLOCK)
+              SET LastSequence = LastSequence + 1, UpdatedAt = GETUTCDATE()
+              OUTPUT inserted.LastSequence
+              WHERE DepartmentId = {0}", departmentId)
+            .ToListAsync();
 
-        var seq = await _ctx.EmployeeCodeSequences.FirstOrDefaultAsync(s => s.DepartmentId == departmentId)
-            ?? throw new InvalidOperationException("Code sequence not initialised for department.");
+        if (seqResult.Count == 0)
+            throw new InvalidOperationException("Code sequence not initialised for department.");
 
-        seq.LastSequence++;
-        seq.UpdatedAt = DateTime.UtcNow;
-        // Will be saved as part of the outer transaction
-
-        return $"{dept.DepartmentCode}{seq.LastSequence:D4}";
+        var nextSeq = seqResult[0];
+        return $"{deptCode}{nextSeq:D4}";
     }
 
-    private static EmployeeDetailDto MapToDetail(Employee e) => new()
+    private EmployeeDetailDto MapToDetail(Employee e) => new()
     {
         EmployeeId     = e.EmployeeId,
         EmployeeCode   = e.EmployeeCode,
@@ -367,8 +435,8 @@ public class EmployeeService : IEmployeeService
         JoiningDate    = e.JoiningDate,
         AnnualSalary   = e.AnnualSalary,
         EmployeeStatus = e.EmployeeStatus,
-        AadhaarNumber  = e.PersonalDetail?.AadhaarNumber ?? "",
-        PANNumber      = e.PersonalDetail?.PANNumber ?? "",
+        AadhaarNumber  = e.PersonalDetail != null ? _crypto.Decrypt(e.PersonalDetail.AadhaarEncrypted) : "",
+        PANNumber      = e.PersonalDetail != null ? _crypto.Decrypt(e.PersonalDetail.PANEncrypted) : "",
         CreatedAt      = e.CreatedAt,
         UpdatedAt      = e.UpdatedAt,
     };

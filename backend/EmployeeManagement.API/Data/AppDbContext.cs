@@ -71,8 +71,8 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<EmployeePersonalDetail>(e =>
         {
             e.ToTable("EmployeePersonalDetails");
-            e.HasIndex(p => p.AadhaarNumber).IsUnique();
-            e.HasIndex(p => p.PANNumber).IsUnique();
+            e.HasIndex(p => p.AadhaarHash).IsUnique();
+            e.HasIndex(p => p.PANHash).IsUnique();
             e.HasOne(p => p.Employee)
              .WithOne(emp => emp.PersonalDetail)
              .HasForeignKey<EmployeePersonalDetail>(p => p.EmployeeId)

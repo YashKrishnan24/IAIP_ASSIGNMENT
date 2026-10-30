@@ -119,11 +119,17 @@ public class EmployeePersonalDetail
     public int PersonalDetailId { get; set; }
     public int EmployeeId { get; set; }
 
-    [Required, MaxLength(14)]
-    public string AadhaarNumber { get; set; } = string.Empty;  // XXXX-XXXX-XXXX
+    [Required, MaxLength(500)]
+    public string AadhaarEncrypted { get; set; } = string.Empty;
 
-    [Required, MaxLength(10)]
-    public string PANNumber { get; set; } = string.Empty;
+    [Required, MaxLength(64)]
+    public string AadhaarHash { get; set; } = string.Empty;
+
+    [Required, MaxLength(500)]
+    public string PANEncrypted { get; set; } = string.Empty;
+
+    [Required, MaxLength(64)]
+    public string PANHash { get; set; } = string.Empty;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

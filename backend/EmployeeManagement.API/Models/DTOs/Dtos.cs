@@ -155,6 +155,7 @@ public class EmployeeFilterRequest
     public DateOnly? JoiningDateTo { get; set; }
     public decimal? MinSalary { get; set; }
     public decimal? MaxSalary { get; set; }
+    public bool IsCustomSalaryRange { get; set; } = false;
     public string SortBy { get; set; } = "EmployeeCode";
     public string SortDirection { get; set; } = "ASC";
     public int PageNumber { get; set; } = 1;

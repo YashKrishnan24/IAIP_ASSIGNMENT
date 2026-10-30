@@ -260,11 +260,11 @@
       const tbody = document.getElementById('recent-tbody');
       tbody.innerHTML = totalRes.data.data.map(e => `
         <tr>
-          <td><span class="emp-code-link" onclick="window.location='employees.html'">${e.employeeCode}</span></td>
-          <td class="fw-600">${e.fullName}</td>
-          <td>${e.departmentName}</td>
-          <td>${e.roleName}</td>
-          <td><span class="badge badge-${e.employeeStatus.toLowerCase()}"><span class="badge-dot"></span>${e.employeeStatus}</span></td>
+          <td><span class="emp-code-link" onclick="window.location='employees.html'">${escapeHtml(e.employeeCode)}</span></td>
+          <td class="fw-600">${escapeHtml(e.fullName)}</td>
+          <td>${escapeHtml(e.departmentName)}</td>
+          <td>${escapeHtml(e.roleName)}</td>
+          <td><span class="badge badge-${escapeHtml(e.employeeStatus.toLowerCase())}"><span class="badge-dot"></span>${escapeHtml(e.employeeStatus)}</span></td>
         </tr>`).join('') || '<tr><td colspan="5"><div class="empty-state"><p>No employees found</p></div></td></tr>';
     } catch (err) {
       Toast.error('Dashboard load failed', err.message);
