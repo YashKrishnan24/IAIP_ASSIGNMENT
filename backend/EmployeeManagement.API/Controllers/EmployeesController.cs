@@ -47,6 +47,13 @@ public class EmployeesController : ControllerBase
         return Ok(ApiResponse<EmployeeDetailDto>.Ok(emp));
     }
 
+    /// <summary>Get employee personal details by ID.</summary>
+    [HttpGet("{id:int}/personal-details")]
+    [Authorize]
+    [ProducesResponseType(typeof(ApiResponse<EmployeeDetailDto>), 200)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> GetPersonalDetails(int id) => await GetEmployee(id);
+
     /// <summary>Create a new employee.</summary>
     [HttpPost]
     [Authorize(Roles = "Admin,Manager")]
