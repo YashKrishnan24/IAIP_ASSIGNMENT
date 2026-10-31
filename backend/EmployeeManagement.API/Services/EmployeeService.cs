@@ -400,22 +400,25 @@ public class EmployeeService : IEmployeeService
 
     /// <summary>
     /// Atomically increments and retrieves the next sequence for a department
-    /// using SQL Server row-level locking (UPDLOCK, ROWLOCK) to completely prevent race conditions.
+    /// using SQL Server row-level locking (UPDLOCK, ROWLOCK) inside the transaction
+    /// to completely eliminate race conditions and deadlocks.
     /// </summary>
     private async Task<string> GenerateCodeInsideTxAsync(int departmentId, string deptCode)
     {
-        var seqResult = await _ctx.Database.SqlQueryRaw<int>(
+        var rowsAffected = await _ctx.Database.ExecuteSqlRawAsync(
             @"UPDATE EmployeeCodeSequences WITH (UPDLOCK, ROWLOCK)
               SET LastSequence = LastSequence + 1, UpdatedAt = GETUTCDATE()
-              OUTPUT inserted.LastSequence
-              WHERE DepartmentId = {0}", departmentId)
-            .ToListAsync();
+              WHERE DepartmentId = {0}", departmentId);
 
-        if (seqResult.Count == 0)
+        if (rowsAffected == 0)
             throw new InvalidOperationException("Code sequence not initialised for department.");
 
-        var nextSeq = seqResult[0];
-        return $"{deptCode}{nextSeq:D4}";
+        var seq = await _ctx.Database.SqlQueryRaw<int>(
+            @"SELECT LastSequence AS [Value] FROM EmployeeCodeSequences WITH (ROWLOCK)
+              WHERE DepartmentId = {0}", departmentId)
+            .SingleAsync();
+
+        return $"{deptCode}{seq:D4}";
     }
 
     private EmployeeDetailDto MapToDetail(Employee e) => new()

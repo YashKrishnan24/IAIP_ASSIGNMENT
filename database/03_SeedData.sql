@@ -79,13 +79,13 @@ SET IDENTITY_INSERT Employees OFF;
 GO
 
 -- ─────────────────────────────────────────────
--- Update EmployeeCodeSequences to match seeded data
+-- Update EmployeeCodeSequences to match seeded data and historical assignments
 -- ─────────────────────────────────────────────
-UPDATE EmployeeCodeSequences SET LastSequence = 6 WHERE DepartmentId = 1;  -- IT
-UPDATE EmployeeCodeSequences SET LastSequence = 4 WHERE DepartmentId = 2;  -- HR
-UPDATE EmployeeCodeSequences SET LastSequence = 4 WHERE DepartmentId = 3;  -- Finance
-UPDATE EmployeeCodeSequences SET LastSequence = 4 WHERE DepartmentId = 4;  -- Sales
-UPDATE EmployeeCodeSequences SET LastSequence = 2 WHERE DepartmentId = 5;  -- Admin
+UPDATE EmployeeCodeSequences SET LastSequence = 6 WHERE DepartmentId = 1;  -- IT (I0001 – I0006)
+UPDATE EmployeeCodeSequences SET LastSequence = 5 WHERE DepartmentId = 2;  -- HR (H0001 – H0004 active, H0005 transferred)
+UPDATE EmployeeCodeSequences SET LastSequence = 4 WHERE DepartmentId = 3;  -- Finance (F0001 – F0004)
+UPDATE EmployeeCodeSequences SET LastSequence = 5 WHERE DepartmentId = 4;  -- Sales (S0001 – S0004 active, S0005 transferred)
+UPDATE EmployeeCodeSequences SET LastSequence = 3 WHERE DepartmentId = 5;  -- Admin (A0001 – A0002 active, A0003 transferred)
 GO
 
 -- ─────────────────────────────────────────────
@@ -115,19 +115,20 @@ INSERT INTO EmployeePersonalDetails (EmployeeId, AadhaarEncrypted, AadhaarHash, 
 GO
 
 -- ─────────────────────────────────────────────
--- Seed EmployeeTransferHistory (Consistent with current employees)
+-- Seed EmployeeTransferHistory (Consistent with current employees;
+-- old codes reflect prior sequence numbers not held by any current employee)
 -- ─────────────────────────────────────────────
--- Employee 6 (Meera Joshi) transferred from Admin to IT (became I0006)
--- Employee 14 (Amit Chopra) transferred from Sales to Finance (became F0004)
--- Employee 20 (Manish Tiwari) transferred from HR to Admin (became A0002)
+-- Employee 6 (Meera Joshi) transferred from Admin (prior code A0003) to IT (became I0006)
+-- Employee 14 (Amit Chopra) transferred from Sales (prior code S0005) to Finance (became F0004)
+-- Employee 20 (Manish Tiwari) transferred from HR (prior code H0005) to Admin (became A0002)
 INSERT INTO EmployeeTransferHistory
     (EmployeeId, OldDepartmentId, NewDepartmentId, OldEmployeeCode, NewEmployeeCode, OldRoleId, NewRoleId, TransferDate, TransferReason)
 VALUES
-    (6, 5, 1, 'A0001', 'I0006', 10, 1, '2023-02-10',
+    (6, 5, 1, 'A0003', 'I0006', 10, 1, '2023-02-10',
      'Internal career progression transfer from Administration to Information Technology software engineering.'),
-    (14, 4, 3, 'S0001', 'F0004', 8, 6, '2022-11-15',
+    (14, 4, 3, 'S0005', 'F0004', 8, 6, '2022-11-15',
      'Lateral department transfer to utilize financial acumen and risk modeling capabilities in Finance.'),
-    (20, 2, 5, 'H0002', 'A0002', 4, 11, '2021-05-20',
+    (20, 2, 5, 'H0005', 'A0002', 4, 11, '2021-05-20',
      'Promoted and transferred to Administration to lead office operations and infrastructure facilities.');
 GO
 

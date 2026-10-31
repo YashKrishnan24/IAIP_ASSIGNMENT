@@ -16,7 +16,11 @@ public class EncryptionService : IEncryptionService
 
     public EncryptionService(IConfiguration config)
     {
-        var rawKey = config["Encryption:Key"] ?? "EmpManagement$SecureEncryptionKey2024!AES256";
+        var rawKey = config["Encryption:Key"];
+        if (string.IsNullOrWhiteSpace(rawKey))
+        {
+            throw new InvalidOperationException("Configuration error: 'Encryption:Key' is missing or empty. A valid 256-bit AES encryption key must be provided.");
+        }
         // Derive exact 256-bit (32-byte) key using SHA256
         _key = SHA256.HashData(Encoding.UTF8.GetBytes(rawKey));
     }
@@ -45,30 +49,25 @@ public class EncryptionService : IEncryptionService
     {
         if (string.IsNullOrEmpty(cipherText)) return string.Empty;
 
-        try
+        var fullCipher = Convert.FromBase64String(cipherText);
+        if (fullCipher.Length < 16)
         {
-            var fullCipher = Convert.FromBase64String(cipherText);
-            if (fullCipher.Length < 16) return cipherText; // Fallback if plain
-
-            using var aes = Aes.Create();
-            aes.Key = _key;
-
-            var iv = new byte[16];
-            var cipherBytes = new byte[fullCipher.Length - 16];
-            Buffer.BlockCopy(fullCipher, 0, iv, 0, 16);
-            Buffer.BlockCopy(fullCipher, 16, cipherBytes, 0, cipherBytes.Length);
-
-            aes.IV = iv;
-            using var decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
-            var decryptedBytes = decryptor.TransformFinalBlock(cipherBytes, 0, cipherBytes.Length);
-
-            return Encoding.UTF8.GetString(decryptedBytes);
+            throw new CryptographicException("Ciphertext payload is too short: must contain at least a 16-byte IV.");
         }
-        catch
-        {
-            // If decryption fails (e.g. legacy plain text), return as-is
-            return cipherText;
-        }
+
+        using var aes = Aes.Create();
+        aes.Key = _key;
+
+        var iv = new byte[16];
+        var cipherBytes = new byte[fullCipher.Length - 16];
+        Buffer.BlockCopy(fullCipher, 0, iv, 0, 16);
+        Buffer.BlockCopy(fullCipher, 16, cipherBytes, 0, cipherBytes.Length);
+
+        aes.IV = iv;
+        using var decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+        var decryptedBytes = decryptor.TransformFinalBlock(cipherBytes, 0, cipherBytes.Length);
+
+        return Encoding.UTF8.GetString(decryptedBytes);
     }
 
     public string ComputeHash(string input)

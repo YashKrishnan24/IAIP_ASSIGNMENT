@@ -14,14 +14,27 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
         sql => sql.CommandTimeout(60)));
 
-// ─── Application Services ─────────────────────────────────────────────────────
+// ─── Application Services & Security Validation ──────────────────────────────
+var encKey = builder.Configuration["Encryption:Key"];
+if (string.IsNullOrWhiteSpace(encKey))
+{
+    throw new InvalidOperationException("Configuration error: 'Encryption:Key' is missing or empty. A valid 256-bit AES encryption key must be provided.");
+}
+
 builder.Services.AddSingleton<IEncryptionService, EncryptionService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 // ─── JWT Auth ─────────────────────────────────────────────────────────────────
 var jwtSection = builder.Configuration.GetSection("JwtSettings");
-var secretKey   = jwtSection["SecretKey"] ?? "EmployeeManagement$SuperSecret#Key2024!@#JWT";
+var secretKey  = jwtSection["SecretKey"];
+if (string.IsNullOrWhiteSpace(secretKey))
+{
+    throw new InvalidOperationException("Configuration error: 'JwtSettings:SecretKey' is missing or empty. A valid JWT signing key must be provided.");
+}
+
+var issuer   = jwtSection["Issuer"] ?? "EmployeeManagementAPI";
+var audience = jwtSection["Audience"] ?? "EmployeeManagementClient";
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>
@@ -32,8 +45,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience         = true,
             ValidateLifetime         = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer              = jwtSection["Issuer"] ?? "EmployeeManagementAPI",
-            ValidAudience            = jwtSection["Audience"] ?? "EmployeeManagementClient",
+            ValidIssuer              = issuer,
+            ValidAudience            = audience,
             IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
             ClockSkew                = TimeSpan.Zero,
         };

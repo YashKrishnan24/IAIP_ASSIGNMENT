@@ -112,16 +112,17 @@ To adhere to strict security best practices, `appsettings.json` contains only pl
        "DefaultConnection": "Server=localhost,1433;Database=EmployeeManagementDB;User Id=sa;Password=YourStrong@Password123;TrustServerCertificate=True;"
      },
      "JwtSettings": {
-       "SecretKey": "YourCustomSecretKeyAtLeast32CharactersLong!",
+       "SecretKey": "EmployeeManagement$SuperSecret#Key2024!@#JWT",
        "Issuer": "EmployeeManagementAPI",
        "Audience": "EmployeeManagementClient",
        "ExpiryInMinutes": 60
      },
      "Encryption": {
-       "Key": "YourCustomAES256Key32CharactersLong!"
+       "Key": "EmpManagement$SecureEncryptionKey2024!AES256"
      }
    }
    ```
+   > **Note on Encryption Key:** The AES key `EmpManagement$SecureEncryptionKey2024!AES256` is a demo development key matching the seeded database records; replace it with a cryptographically secure random 256-bit key in real/production use.
 
 4. Restore NuGet packages and start the API:
    ```powershell
